@@ -14,15 +14,16 @@ $whitespace = [\ \t\f\v\r]   -- whitespace excluding \n
 
 tokens :-
 
-  [ \n ]                           { \s -> NEWLINE }
-  true                             { \s -> TRUE }
-  false                            { \s -> FALSE }
-  $alpha [$alpha $digit \_ \']*    { \s -> ID s }
-  \.                               { \s -> DOT}
-  \\                               { \s -> LAMBDA }
-  \=                               { \s -> EQ }
-  \(                               { \s -> LBRACE }
-  \)                               { \s -> RBRACE }
+  [ \n ]                           { \s -> NEWLINE      }
+  true                             { \s -> TRUE         }
+  false                            { \s -> FALSE        }
+  run                              { \s -> RUN          }
+  $alpha [$alpha $digit \_ \']*    { \s -> ID s         }
+  \.                               { \s -> DOT          }
+  \\                               { \s -> LAMBDA       }
+  \=                               { \s -> EQ           }
+  \(                               { \s -> LBRACE       }
+  \)                               { \s -> RBRACE       }
   $digit+                          { \s -> INT (read s) }
   $whitespace+                     ;
   "--".*                           ;
@@ -41,6 +42,7 @@ data Token
   | RBRACE
   | INT Int
   | NEWLINE
+  | RUN
   deriving (Eq, Show)
 
 lexer = alexScanTokens
