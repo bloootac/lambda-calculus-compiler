@@ -1,33 +1,49 @@
 {
 module Main (main) where
+
+import Prelude hiding (EQ)
 }
 
 %wrapper "basic"
 
-$digit = 0-9            -- digits
-$alpha = [a-zA-Z]       -- alphabetic characters
+$digit = 0-9                 -- digits
+$alpha = [a-zA-Z]            -- alphabetic characters
+$whitespace = [\ \t\f\v\r]   -- whitespace excluding \n
+
+--TODO: rules to add later - combinators, memory + lookup, loops
 
 tokens :-
 
-  $white+                        ;
-  "--".*                         ;
-  let                            { \s -> Let }
-  in                             { \s -> In }
-  $digit+                        { \s -> Int (read s) }
-  [\=\+\-\*\/\(\)]               { \s -> Sym (head s) }
-  $alpha [$alpha $digit \_ \']*  { \s -> Var s }
-
+  [ \n ]                           { \s -> NEWLINE }
+  true                             { \s -> TRUE }
+  false                            { \s -> FALSE }
+  $alpha [$alpha $digit \_ \']*    { \s -> ID s }
+  \.                               { \s -> DOT}
+  \\                               { \s -> LAMBDA }
+  \=                               { \s -> EQ }
+  \(                               { \s -> LBRACE }
+  \)                               { \s -> RBRACE }
+  $digit+                          { \s -> INT (read s) }
+  $whitespace+                     ;
+  "--".*                           ;
 {
 -- Each action has type :: String -> Token
 
 -- The token type:
 data Token
-  = Let
-  | In
-  | Sym Char
-  | Var String
-  | Int Int
+  = ID String
+  | DOT
+  | LAMBDA
+  | EQ
+  | TRUE
+  | FALSE
+  | LBRACE
+  | RBRACE
+  | INT Int
+  | NEWLINE
   deriving (Eq, Show)
+
+lexer = alexScanTokens
 
 main = do
   s <- getContents
