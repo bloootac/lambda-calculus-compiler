@@ -1,70 +1,77 @@
 {
 module Main where
+
+import Lexer 
+import Prelude hiding (EQ)
 }
 
-%name calc
+%name parser
 %tokentype { Token }
 %error { parseError }
-
 %token
-      let             { TokenLet }
-      in              { TokenIn }
-      int             { TokenInt $$ }
-      var             { TokenVar $$ }
-      '='             { TokenEq }
-      '+'             { TokenPlus }
-      '-'             { TokenMinus }
-      '*'             { TokenTimes }
-      '/'             { TokenDiv }
-      '('             { TokenOB }
-      ')'             { TokenCB }
+      ID              { ID $$    }
+      DOT             { DOT      }
+      LAMBDA          { LAMBDA   }
+      '='             { EQ       }
+      TRUE            { TRUE     }
+      FALSE           { FALSE    }
+      '('             { LBRACE   }
+      ')'             { RBRACE   }
+      INT             { INT $$   }
+      NEWLINE         { NEWLINE  }
+      RUN             { RUN      }
 	  
+%left ID INT 
+%nonassoc APPLY
 %%
 
-data Exp
-      = Let String Exp Exp
-      | Exp1 Exp1
-      deriving Show
+	  
+program     : line                                       { [$1]         }
+            | line program                               { $1 : $2      }
+	  
+line        : ID '=' lambda_term NEWLINE                 { Assign $1 $3 }
+            | RUN lambda_term NEWLINE                    { Run $2       }
+	  
+	  
+lambda_term : var                                        { Variable $1  }
+            | LAMBDA args DOT lambda_term                { Func $2 $4   }
+            | lambda_term lambda_term %prec APPLY        { Apply $1 $2  }
+            | '(' lambda_term ')'                        { Brack $2     }
 
-data Exp1
-      = Plus Exp1 Term
-      | Minus Exp1 Term
-      | Term Term
-      deriving Show
+args        : ID                                         { [$1]         }
+            | ID args                                    { $1 : $2      }
 
-data Term
-      = Times Term Factor
-      | Div Term Factor
-      | Factor Factor
-      deriving Show
+var         : ID                                         { Str $1       }
+            | INT                                        { Num $1       }
 
-data Factor
-      = Int Int
-      | Var String
-      | Brack Exp
-      deriving Show
-
-Exp   : let var '=' Exp in Exp  { Let $2 $4 $6 }
-      | Exp1                    { Exp1 $1 }
-
-Exp1  : Exp1 '+' Term           { Plus $1 $3 }
-      | Exp1 '-' Term           { Minus $1 $3 }
-      | Term                    { Term $1 }
-
-Term  : Term '*' Factor         { Times $1 $3 }
-      | Term '/' Factor         { Div $1 $3 }
-      | Factor                  { Factor $1 }
-
-Factor
-      : int                     { Int $1 }
-      | var                     { Var $1 }
-      | '(' Exp ')'             { Brack $2 }
-
+var_list    : var                                        { [$1]         }
+            | var var_list                               { $1 : $2      }
+	  
+	  
+{
 
 parseError :: [Token] -> a
 parseError _ = error "Parse error"
 
+data Line 
+      = Assign String Lambda_term 
+      | Run Lambda_term
+      deriving Show
+
+data Lambda_term 
+      = Func [String] Lambda_term 
+      | Apply Lambda_term Lambda_term 
+	  | Brack Lambda_term
+      | Variable Var
+      deriving Show
+
+data Var 
+      = Str String
+      | Num Int	 
+	  deriving Show
 
 	  
+main = getContents >>= print . parser . lexer
+ 
 }
 
