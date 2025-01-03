@@ -1,5 +1,5 @@
 {
-module Main where
+module Parser where
 
 import Lexer 
 import Prelude hiding (EQ)
@@ -27,11 +27,13 @@ import Prelude hiding (EQ)
 
 	  
 program     : line                                       { [$1]         }
-            | line program                               { $1 : $2      }
+            | inner_line program                         { $1 : $2      }
 	  
-line        : ID '=' lambda_term NEWLINE                 { Assign $1 $3 }
-            | RUN lambda_term NEWLINE                    { Run $2       }
+line        : ID '=' lambda_term                         { Assign $1 $3 }
+            | RUN lambda_term                            { Run $2       }
+            | line NEWLINE                               { $1           }
 	  
+inner_line  : line NEWLINE                               { $1           }
 	  
 lambda_term : var                                        { Variable $1  }
             | LAMBDA args DOT lambda_term                { Func $2 $4   }
