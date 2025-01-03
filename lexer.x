@@ -1,5 +1,5 @@
 {
-module Main (main) where
+module Lexer where
 
 import Prelude hiding (EQ)
 }
