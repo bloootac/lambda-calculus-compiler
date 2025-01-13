@@ -64,12 +64,12 @@ data Lambda_term
       = Func [String] Lambda_term 
       | Apply Lambda_term Lambda_term 
       | Variable Var
-      deriving Show
+      deriving (Show, Eq)
 
 data Var 
       = Str String
       | Num Int	 
-	  deriving Show
+	  deriving (Show, Eq)
 
 	  
 main = getContents >>= print . parser . lexer
