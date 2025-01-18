@@ -30,7 +30,7 @@ program     : line                                       { [$1]         }
             | inner_line program                         { $1 : $2      }
 	  
 line        : ID '=' lambda_term                         { Assign $1 $3 }
-            | RUN lambda_term                            { Run $2       }
+            | RUN lambda_term                            { RunTerm $2   }
             | line NEWLINE                               { $1           }
 	  
 inner_line  : line NEWLINE                               { $1           }
@@ -57,7 +57,7 @@ parseError _ = error "Parse error"
 
 data Line 
       = Assign String Lambda_term 
-      | Run Lambda_term
+      | RunTerm Lambda_term
       deriving Show
 
 data Lambda_term 
