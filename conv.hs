@@ -54,7 +54,6 @@ num_to_lambda n = Ap (Var "f") (num_to_lambda $ n-1)
 -- \\x.x = SKK
 -- \\x.AB = S (\\x.A) (\\x.B)
 
-
 lambda_to_comb :: Lambda -> Comb
 
 lambda_to_comb l =
@@ -68,35 +67,15 @@ lambda_to_comb' x y =
             otherwise -> if y == (V x) then App (App S K) K else App K y
 
 run_lambda = (map undo_shorthand) . (conv_to_lambda Map.empty) . parser . lexer
-run = (map lambda_to_comb) . (map undo_shorthand) . (conv_to_lambda Map.empty) . parser . lexer
-run_single x = (run x) !! 0
+
+conv = (map lambda_to_comb) . (map undo_shorthand) . (conv_to_lambda Map.empty) . parser . lexer
+conv_single x = (conv x) !! 0
+
+run = map run_c . conv
+run_single = run_c . conv_single
 
 -- for testing
 c_id = (App (App S K) K)
 one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id))) `App` (K `App` c_id)
 fx f = (App (App f (V "f")) (V "x"))
 
-
-numeral :: Int -> Comb
-numeral 1 = run_single "run \\f x. f x"
-numeral n = plusOne (numeral $ n-1)
-
-
-plusOne :: Comb -> Comb
-plusOne n = let p = run_single "run \\m. \\f x. f (m f x)"
-                in App p n
-
--- isNumeral :: Comb -> Maybe Int
--- isNumeral c = isNumeralGreaterThan c 0
-
--- isNumeralGreaterThan :: Comb -> Int -> Maybe Int
--- isNumeralGreaterThan c n = if c_length c < c_length (numeral n) 
-                           -- then Nothing 
-                           -- else if c == numeral n 
-                                -- then Just n 
-                                -- else isNumeralGreaterThan c (n+1)
-
--- c_length :: Comb -> Int
--- c_length S = 1
--- c_length K = 1
--- c_length (App x y) = c_length x + c_length y
