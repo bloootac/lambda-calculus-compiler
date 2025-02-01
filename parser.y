@@ -30,7 +30,7 @@ program     : line                                       { [$1]         }
             | inner_line program                         { $1 : $2      }
 	  
 line        : ID '=' lambda_term                         { Assign $1 $3 }
-            | RUN lambda_term                            { Run $2       }
+            | RUN lambda_term                            { RunTerm $2   }
             | line NEWLINE                               { $1           }
 	  
 inner_line  : line NEWLINE                               { $1           }
@@ -38,7 +38,7 @@ inner_line  : line NEWLINE                               { $1           }
 lambda_term : var                                        { Variable $1  }
             | LAMBDA args DOT lambda_term                { Func $2 $4   }
             | lambda_term lambda_term %prec APPLY        { Apply $1 $2  }
-            | '(' lambda_term ')'                        { Brack $2     }
+            | '(' lambda_term ')'                        { $2           }
 
 args        : ID                                         { [$1]         }
             | ID args                                    { $1 : $2      }
@@ -57,20 +57,19 @@ parseError _ = error "Parse error"
 
 data Line 
       = Assign String Lambda_term 
-      | Run Lambda_term
+      | RunTerm Lambda_term
       deriving Show
 
 data Lambda_term 
       = Func [String] Lambda_term 
       | Apply Lambda_term Lambda_term 
-	  | Brack Lambda_term
       | Variable Var
-      deriving Show
+      deriving (Show, Eq)
 
 data Var 
       = Str String
       | Num Int	 
-	  deriving Show
+	  deriving (Show, Eq)
 
 	  
 main = getContents >>= print . parser . lexer
