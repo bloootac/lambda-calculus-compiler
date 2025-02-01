@@ -74,8 +74,4 @@ conv_single x = (conv x) !! 0
 run = map run_c . conv
 run_single = run_c . conv_single
 
--- for testing
-c_id = (App (App S K) K)
-one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id))) `App` (K `App` c_id)
-fx f = (App (App f (V "f")) (V "x"))
 
