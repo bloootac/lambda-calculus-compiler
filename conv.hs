@@ -73,5 +73,5 @@ conv_single x = (conv x) !! 0
 
 run = map run_c . conv
 run_single = run_c . conv_single
-
+run_fx = run_c . fx . run_single
 
