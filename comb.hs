@@ -11,13 +11,40 @@ instance Show Comb where
   show S = "S"
   show K = "K"
   show (V s) = s
-  show (App x y) =
-    case is_num (App x y) of (Just n) -> show n 
-                             Nothing  -> let sx = show x; sy = show y
-                                             wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
-                                             is_num = (foldr (&&) True ). map isDigit
-                                         in if (is_num sx && is_num sy) then "(" ++ sx ++ ")" ++ sy
-                                            else wrap sx ++ wrap sy										 
+  show (App x y) = let sx = show x; sy = show y
+                       wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
+				   in wrap sx ++ wrap sy
+  -- show (App x y) =
+    -- case is_num (App x y) of (Just n) -> show n 
+                             -- Nothing  -> let sx = show x; sy = show y
+                                             -- wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
+                                             -- is_num = (foldr (&&) True ). map isDigit
+                                         -- in if (is_num sx && is_num sy) then "(" ++ sx ++ ")" ++ sy
+                                            -- else wrap sx ++ wrap sy		
+											
+
+c_id = (App (App S K) K)
+
+-- (===) :: Comb -> Comb -> Bool
+-- K === App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id) = True
+-- App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id) === K = True
+
+-- S === ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) = True
+-- ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) === S = True
+
+-- (App S (App K K)) === ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) = True
+-- ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) === (App S (App K K)) = True
+
+-- (App (App S (App K S)) (App S (App K K))) === ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) = True
+-- ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) === (App (App S (App K S)) (App S (App K K))) = True
+
+-- (App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S))) === ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) = True
+-- ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) === ((App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S)))) = True
+-- K === K = True
+-- S === S = True
+-- (App x y) === (App x' y') = (x === x') && (y === y')
+-- _ === _ = False
+
 
 data Run a = Run a 
 
@@ -73,6 +100,13 @@ show_annotated (Log s x) = mapM_ putStrLn (s ++ [show x])
 log_run_comb = show_annotated . annotated_run_comb 
 
 run_c :: Comb -> Comb
+
+-- run_c (App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id)) = K
+-- run_c ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) = S
+-- run_c ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) = (App S (App K K))
+-- run_c ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) = (App (App S (App K S)) (App S (App K K)))
+-- run_c ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) = (App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S)))
+
 run_c (App (App K a) b) = run_c a
 run_c (App (App (App S f) g) x) = run_c (App (App f x) (App g x))
 run_c (App x y) = let x' = run_c x
@@ -99,5 +133,13 @@ is_num c = is_num' c 0
 is_num' :: Comb -> Int -> Maybe Int
 is_num' c n = let x = c_num n
               in if c_length c < c_length x then Nothing
-                 else if c == x then Just n
+                 else if c === x then Just n
                       else is_num' c (n+1)
+
+-- for testing
+one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id))) `App` (K `App` c_id)
+fx f = (App (App f (V "f")) (V "x"))
+
+
+
+
