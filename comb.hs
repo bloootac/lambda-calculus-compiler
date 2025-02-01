@@ -11,16 +11,16 @@ instance Show Comb where
   show S = "S"
   show K = "K"
   show (V s) = s
-  show (App x y) = let sx = show x; sy = show y
-                       wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
-				   in wrap sx ++ wrap sy
-  -- show (App x y) =
-    -- case is_num (App x y) of (Just n) -> show n 
-                             -- Nothing  -> let sx = show x; sy = show y
-                                             -- wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
-                                             -- is_num = (foldr (&&) True ). map isDigit
-                                         -- in if (is_num sx && is_num sy) then "(" ++ sx ++ ")" ++ sy
-                                            -- else wrap sx ++ wrap sy		
+  -- show (App x y) = let sx = show x; sy = show y
+                       -- wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
+				   -- in wrap sx ++ wrap sy
+  show (App x y) =
+    case is_num (App x y) of (Just n) -> show n 
+                             Nothing  -> let sx = show x; sy = show y
+                                             wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
+                                             is_num = (foldr (&&) True ). map isDigit
+                                         in if (is_num sx && is_num sy) then "(" ++ sx ++ ")" ++ sy
+                                            else wrap sx ++ wrap sy		
 											
 
 c_id = (App (App S K) K)
@@ -141,10 +141,30 @@ one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id)))
 fx f = (App (App f (V "f")) (V "x"))
 
 
-
 {-
   recognise more forms of numbers:
    - numbers plus one? added to each other?
    - delayed id
    - numbers passed into other funcs e.g. fib, multiplying ?
+   
+   
+could recognise addOne i...? :
+ normal form: (S((S(KS))((S(KK))I))) ((S((S(KS))((S((S(KS))((S(KK))(Ki))))((S(KK))I))))0)
+ unsimplified: ((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))((S(KK))I)))))((S((S(KS))((S(KK))(KK))))0)))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK)))))i
+ 
+ normal form = S h g where h = S (KS) (S (KK) I) and g = i !
+   so if i is a number:
+   S (S (KS) (S (KK) I)) i = i + 1
+   S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
+	
+	
+	combining plusOnes:
+	ghci> run_single "plusOne = \\m . \\f x. f (m f x) \n run plusOne (plusOne 1)"
+(S((S(KS))((S(KK))I))) ((S((S(KS))((S((S(KS))((S(KK)) (K((S((S(KS))((S(KK))I)))((S((S(KS))((S((S(KS))((S(KK))(K1))))((S(KK))I))))0))) )))((S(KK))I)))) 0)
+ addOne                 ( delayed id                  (addOne (delayed id 1)))      
+
+	
+	
 -}
+
+
