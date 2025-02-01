@@ -133,7 +133,7 @@ is_num c = is_num' c 0
 is_num' :: Comb -> Int -> Maybe Int
 is_num' c n = let x = c_num n
               in if c_length c < c_length x then Nothing
-                 else if c === x then Just n
+                 else if c == x then Just n
                       else is_num' c (n+1)
 
 -- for testing
@@ -142,4 +142,9 @@ fx f = (App (App f (V "f")) (V "x"))
 
 
 
-
+{-
+  recognise more forms of numbers:
+   - numbers plus one? added to each other?
+   - delayed id
+   - numbers passed into other funcs e.g. fib, multiplying ?
+-}
