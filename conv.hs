@@ -6,6 +6,7 @@ import Lexer
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Monad
+import System.IO
 
 
 -- Program -> Lambda
@@ -75,3 +76,12 @@ run = map run_c . conv
 run_single = run_c . conv_single
 run_fx = run_c . fx . run_single
 
+run_file :: Show a => (String -> a) -> IO ()
+run_file r = do
+  program <- readFile "program.txt"
+  (putStrLn . show) (r program)
+  
+run_f_c = run_file run_single
+run_f_l = run_file run_lambda
+run_f_fx = run_file run_fx
+  
