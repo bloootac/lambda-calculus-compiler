@@ -107,10 +107,10 @@ log_run_comb = show_annotated . annotated_run_comb
 
 run_c :: Comb -> Comb
 
--- run_c (App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id)) = K
--- run_c ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) = S
+-- run_c (App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K (App (App S K) K))) = K
+-- run_c ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K (App (App S K) K)))) = S
 -- run_c ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) = (App S (App K K))
--- run_c ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) = (App (App S (App K S)) (App S (App K K)))
+-- run_c ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K (App (App S K) K)))) = (App (App S (App K S)) (App S (App K K)))
 -- run_c ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) = (App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S)))
 
 run_c (App (App K a) b) = run_c a
@@ -165,17 +165,17 @@ c_num 0 = c_zero
 c_num n = App c_plus_one (c_num $ n-1)
 
 is_num :: Comb -> Maybe Int 
--- plus one
+-- plus one: S (S (KS) (S (KK) I)) i = i + 1
 is_num (App (App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) i) = fmap (1+) (is_num i)
--- delayed const 
+-- delayed const: S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
 is_num (App (App S (App (App S (App K S)) (App (App S (App (App S (App K S)) (App (App S (App K K)) (App K i)))) (App (App S (App K K)) (App (App S K) K))))) c_zero) = is_num i
--- another delayed const?
+-- another delayed const: ((S(Ki))I) = i
 is_num (App (App S (App K i)) (App (App S K) K)) = is_num i
--- multiplication
+-- multiplication: (S(Ki))j = i * j
 is_num (App (App S (App K i)) j) = is_num i >>= \x -> is_num j >>= \y -> return (x * y)
 -- zero
 is_num (App (App S (App (App S (App K S)) (App K K))) (App K K)) = Just 0
-
+-- not numbers
 is_num x = Nothing
 
 --is_num c = is_num' c 0
