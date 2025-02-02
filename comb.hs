@@ -147,11 +147,8 @@ could recognise addOne i:
    S (S (KS) (S (KK) I)) i = i + 1
    S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
 
-ghci> run_single "run 1 2 3"
-(S(K3))((S(K3))I)
-(0.01 secs, 1,079,824 bytes)
-ghci> run_fx "run 1 2 3"
-f(f(f(f(f(f(f(f(fx))))))))
+TODO: get fib to work
+ - get tuples to work
 
 
 
