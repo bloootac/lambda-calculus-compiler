@@ -26,17 +26,17 @@ instance Show Comb where
 c_id = (App (App S K) K)
 
 -- (===) :: Comb -> Comb -> Bool
--- K === App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id) = True
--- App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K c_id) === K = True
+-- K === App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K (App (App S K) K)) = True
+-- App (App S (App (App S (App K S)) (App (App S (App K K)) K)) ) (App K (App (App S K) K)) === K = True
 
--- S === ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) = True
--- ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K c_id))) === S = True
+-- S === ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K (App (App S K) K)))) = True
+-- ((App S ((App S (App K S)) `App` (App (App S (App K (App S (App K S)))) (App (App S (App K (App S (App K K)))) S)))) `App` (App K (App K (App (App S K) K)))) === S = True
 
 -- (App S (App K K)) === ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) = True
 -- ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) K)))) `App` (App K K)) === (App S (App K K)) = True
 
--- (App (App S (App K S)) (App S (App K K))) === ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) = True
--- ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K c_id))) === (App (App S (App K S)) (App S (App K K))) = True
+-- (App (App S (App K S)) (App S (App K K))) === ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K (App (App S K) K)))) = True
+-- ((App S (App K K)) `App` ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) `App` (App K (App (App S K) K)))) === (App (App S (App K S)) (App S (App K K))) = True
 
 -- (App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S))) === ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) = True
 -- ((App S (App (App S (App K S)) (App (App S (App K K)) (App (App S (App K S)) (App (App S (App K (App S (App K S)))) S))))) `App` (App K S)) === ((App S (App K (App S (App K S)))) `App` (App (App S (App K S)) (App S (App K S)))) = True
@@ -125,12 +125,6 @@ c_length S = 1
 c_length K = 1
 c_length (V x) = 1
 c_length (App x y) = c_length x + c_length y
-													   
-c_zero = App (App S (App (App S (App K S)) (App K K))) (App K K)
-
-c_num :: Int -> Comb
-c_num 0 = c_zero
-c_num n = App c_plus_one (c_num $ n-1)
 
 -- for testing
 one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id))) `App` (K `App` c_id)
@@ -139,9 +133,9 @@ fx f = (App (App f (V "f")) (V "x"))
 
 {-
   recognise more forms of numbers:
-   - numbers plus one
+   - numbers plus one 
    - numbers added to each other 
-   - delayed id 
+   - delayed id <----
    - fib
    - multiplying
    
@@ -153,26 +147,35 @@ could recognise addOne i:
    S (S (KS) (S (KK) I)) i = i + 1
    S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
 
+ghci> run_single "run 1 2 3"
+(S(K3))((S(K3))I)
+(0.01 secs, 1,079,824 bytes)
+ghci> run_fx "run 1 2 3"
+f(f(f(f(f(f(f(f(fx))))))))
 
-
-ghci> run_single "run \\b. 0"
-(S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK))
-
-ghci> run_single "run \\b. 1"
-(S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK)))
-ghci> run_single "run \\b. 2"
-(S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK))))
 
 
 -}
 
 c_plus_one = (App S (App (App S (App K S)) (App (App S (App K K)) c_id)))
+c_zero = App (App S (App (App S (App K S)) (App K K))) (App K K)
 
+c_num :: Int -> Comb
+c_num 0 = c_zero
+c_num n = App c_plus_one (c_num $ n-1)
 
 is_num :: Comb -> Maybe Int 
+-- plus one
 is_num (App (App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) i) = fmap (1+) (is_num i)
+-- delayed const 
 is_num (App (App S (App (App S (App K S)) (App (App S (App (App S (App K S)) (App (App S (App K K)) (App K i)))) (App (App S (App K K)) (App (App S K) K))))) c_zero) = is_num i
+-- another delayed const?
+is_num (App (App S (App K i)) (App (App S K) K)) = is_num i
+-- multiplication
+is_num (App (App S (App K i)) j) = is_num i >>= \x -> is_num j >>= \y -> return (x * y)
+-- zero
 is_num (App (App S (App (App S (App K S)) (App K K))) (App K K)) = Just 0
+
 is_num x = Nothing
 
 --is_num c = is_num' c 0
