@@ -46,6 +46,12 @@ c_id = (App (App S K) K)
 -- _ === _ = False
 
 
+(===) :: Comb -> Comb -> Bool
+K === K = True
+S === S = True
+(App x y) === (App x' y') = (x === x') && (y === y')
+
+
 data Run a = Run a 
 
 instance Show (Run Comb) where
@@ -121,20 +127,10 @@ c_length (V x) = 1
 c_length (App x y) = c_length x + c_length y
 													   
 c_zero = App (App S (App (App S (App K S)) (App K K))) (App K K)
-c_plus_one = App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K) ))
 
 c_num :: Int -> Comb
 c_num 0 = c_zero
 c_num n = App c_plus_one (c_num $ n-1)
-
-is_num :: Comb -> Maybe Int 
-is_num c = is_num' c 0
-
-is_num' :: Comb -> Int -> Maybe Int
-is_num' c n = let x = c_num n
-              in if c_length c < c_length x then Nothing
-                 else if c == x then Just n
-                      else is_num' c (n+1)
 
 -- for testing
 one = (S `App` ((S `App` (K `App` S)) `App` ((S `App` (K `App` K)) `App` c_id))) `App` (K `App` c_id)
@@ -143,28 +139,48 @@ fx f = (App (App f (V "f")) (V "x"))
 
 {-
   recognise more forms of numbers:
-   - numbers plus one? added to each other?
-   - delayed id
-   - numbers passed into other funcs e.g. fib, multiplying ?
+   - numbers plus one
+   - numbers added to each other 
+   - delayed id 
+   - fib
+   - multiplying
    
    
-could recognise addOne i...? :
- normal form: (S((S(KS))((S(KK))I))) ((S((S(KS))((S((S(KS))((S(KK))(Ki))))((S(KK))I))))0)
- unsimplified: ((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))((S(KK))I)))))((S((S(KS))((S(KK))(KK))))0)))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK)))))i
+could recognise addOne i:
  
  normal form = S h g where h = S (KS) (S (KK) I) and g = i !
    so if i is a number:
    S (S (KS) (S (KK) I)) i = i + 1
    S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
-	
-	
-	combining plusOnes:
-	ghci> run_single "plusOne = \\m . \\f x. f (m f x) \n run plusOne (plusOne 1)"
-(S((S(KS))((S(KK))I))) ((S((S(KS))((S((S(KS))((S(KK)) (K((S((S(KS))((S(KK))I)))((S((S(KS))((S((S(KS))((S(KK))(K1))))((S(KK))I))))0))) )))((S(KK))I)))) 0)
- addOne                 ( delayed id                  (addOne (delayed id 1)))      
 
-	
-	
+
+
+ghci> run_single "run \\b. 0"
+(S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK))
+
+ghci> run_single "run \\b. 1"
+(S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK)))
+ghci> run_single "run \\b. 2"
+(S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S((S(KS))((S(KK))(KK))))0))))((S((S(KS))((S((S(KS))((S(KK))(KS))))((S(KK))(KK)))))((S(KK))(KK))))
+
+
 -}
 
+c_plus_one = (App S (App (App S (App K S)) (App (App S (App K K)) c_id)))
+
+
+is_num :: Comb -> Maybe Int 
+is_num (App (App S (App (App S (App K S)) (App (App S (App K K)) (App (App S K) K)))) i) = fmap (1+) (is_num i)
+is_num (App (App S (App (App S (App K S)) (App (App S (App (App S (App K S)) (App (App S (App K K)) (App K i)))) (App (App S (App K K)) (App (App S K) K))))) c_zero) = is_num i
+is_num (App (App S (App (App S (App K S)) (App K K))) (App K K)) = Just 0
+is_num x = Nothing
+
+--is_num c = is_num' c 0
+--S (S (KS) (S (S (KS) (S (KK) Ki) (S (KK) I)) )) 0 = i
+-- ((S((S(KS))((S((S(KS))((S(KK))(Ki))))((S(KK))I))))0)
+-- is_num' :: Comb -> Int -> Maybe Int
+-- is_num' c n = let x = c_num n
+              -- in if c_length c < c_length x then Nothing
+                 -- else if c == x then Just n
+                      -- else is_num' c (n+1)
 
