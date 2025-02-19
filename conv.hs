@@ -8,8 +8,15 @@ import qualified Data.Map as Map
 import Control.Monad
 import System.IO
 
+{-
+TODO: 
+get subOne 1 to be recognised as a number
+add TRUE / FALSE 
+improve file loading 
+find more optimisations 
+-}
 
--- Program -> Lambda
+-- ******************** Program -> Lambda ********************
 
 data Lambda = Var String | F String Lambda | Ap Lambda Lambda deriving Eq
 
@@ -48,7 +55,8 @@ num_to_lambda :: Int -> Lambda
 num_to_lambda 0 = Var "x"
 num_to_lambda n = Ap (Var "f") (num_to_lambda $ n-1)
 
--- Lambda -> SK 
+
+-- ******************** Lambda -> SK ********************
 
 -- rules:
 -- \\x.C = KC
@@ -67,21 +75,52 @@ lambda_to_comb' x y =
   case y of (App a b) -> App (App S (lambda_to_comb' x a)) (lambda_to_comb' x b)
             otherwise -> if y == (V x) then App (App S K) K else App K y
 
+--TODO: add more optimisations...and get subOne numbers to be recognised
+{-
+(S((S(KS))((S((S(KS))((S((S(KS))((S(KK))(K1))))((S(K(S(K(S(K((S((S(KS))((S(K(SI)))((S(KK))(K1)))))((S(KK))I))))))))((S((S(KS))((S(K(S(KS))))((S(K(S(K(S((S(KS))((S((S(KS))((S(K(S(K((S((SI)(K(K0))))(K((S(KK))I)))))))((S((S(KS))((S(KK))I)))(K(K((S(KK))I)))))))0)))))))((S((S(KS))((S(K(S(KS))))((S(K(S(K(S(KS))))))((S(K(S(K(S(KK))))))((S(K(S(KK))))((S(KK))I)))))))(K(K0)))))))(K(K((SI)(K0)))))))))(K((S(K((S((S(KS))((S(K(SI)))((S(KK))(K0)))))((S(KK))I))))I)))))(K(K0))
+
+-}
+optimise :: Comb -> Comb
+
+optimise (App (App S (App K a)) (App K b)) = App K (App (optimise a) (optimise b))
+
+optimise (App x y) = let x' = optimise x
+                         y' = optimise y
+                     in if (x==x' && y==y') then (App x y) else optimise (App x' y')
+optimise x = x
+
+
+-- ******************** run from terminal ********************
+
 run_lambda = (map undo_shorthand) . (conv_to_lambda Map.empty) . parser . lexer
 
-conv = (map lambda_to_comb) . (map undo_shorthand) . (conv_to_lambda Map.empty) . parser . lexer
+conv = (map (optimise . lambda_to_comb . undo_shorthand)) . (conv_to_lambda Map.empty) . parser . lexer
 conv_single x = (conv x) !! 0
 
-run = map run_c . conv
-run_single = run_c . conv_single
-run_fx = run_c . fx . run_single
+run = mapM run_comb . conv
+run_single = run_comb . conv_single
+run_fx = run_comb . fx . conv_single
+show_run = putStr . unlines . mapM (show . run_comb) . conv
 
-run_file :: Show a => (String -> a) -> IO ()
+-- ******************** run from file ********************
+
+run_file :: (String -> IO ()) -> IO ()
 run_file r = do
   program <- readFile "program.txt"
-  (putStrLn . show) (r program)
-  
-run_f_c = run_file run_single
-run_f_l = run_file run_lambda
-run_f_fx = run_file run_fx
-  
+  r program
+
+run_f_comb = run_file (putStr . unlines . map (show . run_comb) . conv)
+run_f_lambda = run_file (putStr . unlines . map show . run_lambda)
+run_f_fx = run_file (putStr . unlines . map (show . run_comb . fx) . conv)
+
+run_f_log = do
+  program <- readFile "program.txt"
+  (write_run_comb . conv_single) program 
+
+-- search reduction tree for normal form, log lengths of paths found
+run_f_comp_paths ::  IO ()
+run_f_comp_paths = run_file (log_comp_search . conv_single)
+
+-- search reduction tree, print first normal form found
+run_f_find_path :: IO()
+run_f_find_path = run_file (putStrLn . show . run_comb . snd . (\x -> x !! 0) . all_comp_lengths' . conv_single)
