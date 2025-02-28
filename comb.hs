@@ -4,8 +4,6 @@ import Control.Monad
 import Data.List
 import Data.Char
 
---TODO: clean up everything ....
-
 -- ******************** datatypes ********************
 
 data Comb = S | K | V String | App Comb Comb deriving Eq
