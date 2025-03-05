@@ -21,7 +21,7 @@ import Prelude hiding (EQ)
       NEWLINE         { NEWLINE  }
       RUN             { RUN      }
 	  
-%left ID INT 
+%left ID INT LAMBDA '(' ')' NEWLINE 
 %nonassoc APPLY
 %%
 

@@ -1,0 +1,6 @@
+tru = \a b.a 
+fal = \a b.b 
+tup = \a x. (\b. b a x) 
+id = \x.x
+
+run tup 4 7
