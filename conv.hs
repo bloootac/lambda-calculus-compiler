@@ -15,10 +15,8 @@ more optimisations:
  - add combinators
  - maybe look into subOne later
 
-binary encoding: S = 01, K = 00, App = 1
- - write result to file
- - write stack func in C
-
+C runtime:
+ - move over to C...
 -}
 
 -- ******************** Program -> Lambda ********************
