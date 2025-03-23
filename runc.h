@@ -1,8 +1,3 @@
-// typedef struct {
-	// char *head;
-	// char *tail;
-// } SplitComb;
-
 typedef struct Comb {
 	char *val;
 	struct Comb *left;
