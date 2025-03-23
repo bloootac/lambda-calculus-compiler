@@ -128,4 +128,4 @@ encode (App x y) = "+" ++ (encode x) ++ (encode y)
 write_sk = do
   program <- readFile "program.txt"
   let sk = (unlines . map encode . conv) program
-  writeFile "program.sk" sk
+  writeFile "program.sk" (take (length sk - 1) sk)
