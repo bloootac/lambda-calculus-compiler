@@ -8,7 +8,8 @@
 
 /*
 TODO:
- - fix runComb bug <------ :(
+ - fix runComb bug [done] (i don't understand why but it's gone)
+ - figure out when to free memory locations? it stops working when i try
  - add simplifyOneStep
  - add kPrune ? 
 */
@@ -142,16 +143,24 @@ bool runComb(Comb** comb) {
 		//there is nothing we can do
 		return false;
 	} else if (matchK(*comb)) {
+		
+		// free((*comb)->left->left);
+		// free((*comb)->right);
+		
 		*comb = (*comb)->left->right;
-		//recurse ...
 		runComb(comb);
+		
 		return true;
 	} else if (matchS(*comb)) {
+		
+		//free((*comb)->left->left->left);
+		
 		Comb* f = (*comb)->left->left->right;
 		Comb* g = (*comb)->left->right;
 		Comb* x = (*comb)->right;
 		
-		
+		(*comb)->left = malloc(sizeof(Comb));
+		(*comb)->left->val = NULL;
 		(*comb)->left->left = f;
 		(*comb)->left->right = x;
 		
