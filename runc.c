@@ -41,6 +41,8 @@ void main() {
 	strToTree(root, &(root->left), &(root->right), &(root->val), input);
 	printTree(root);
 	
+	fflush(stdout);
+	
 	printf("\nrun:\n");
 	runComb(&root);
 	printTree(root);
@@ -139,45 +141,97 @@ bool matchS(Comb* comb) {
 }
 
 bool runComb(Comb** comb) {
+	
+	//TODO: we get a seg fault when running fib 5 f x...
+	
 	if ((*comb)->left == NULL) {
 		//there is nothing we can do
 		return false;
 	} else if (matchK(*comb)) {
-		
-		// free((*comb)->left->left);
-		// free((*comb)->right);
-		
-		*comb = (*comb)->left->right;
-		runComb(comb);
-		
+		reduceK(comb);
+		runComb(comb);	
 		return true;
 	} else if (matchS(*comb)) {
-		
-		//free((*comb)->left->left->left);
-		
-		Comb* f = (*comb)->left->left->right;
-		Comb* g = (*comb)->left->right;
-		Comb* x = (*comb)->right;
-		
-		(*comb)->left = malloc(sizeof(Comb));
-		(*comb)->left->val = NULL;
-		(*comb)->left->left = f;
-		(*comb)->left->right = x;
-		
-		(*comb)->right = malloc(sizeof(Comb));
-		(*comb)->right->val = NULL;
-		(*comb)->right->left = g;
-		(*comb)->right->right = x;
-		
+		reduceS(comb);	
 		runComb(comb);
 		return true;
 	} else {
-		bool b1 = runComb(&(*comb)->left);
-		bool b2 = runComb(&(*comb)->right);	
-		if (b1 || b2) {
+		bool b1 = simplifyOneStep(&(*comb)->left);
+		if (!b1) {
+			bool b2 = simplifyOneStep(&(*comb)->right);
+			if (!b2) return false;
 			runComb(comb);
 			return true;
-		} else return false; 
+		} else {
+			runComb(comb);
+			return true;
+		}
 	}
 
+}
+
+/*
+run_c :: Comb -> Comb
+
+run_c (App (App K a) b) = run_c $ k_prune prune_lim a
+run_c (App (App (App K a) b) c) = run_c $ k_prune prune_lim (App a c)
+run_c (App c (App (App K a) b)) = run_c $ k_prune prune_lim(App c a)
+run_c (App (App (App S f) g) x) = run_c $ k_prune prune_lim (App (App f x) (App g x))
+
+run_c (App x y) = let x' = simplify_one_step x
+                  in if (x == x') then 
+                      let y' = simplify_one_step y 
+                      in if (y == y') then k_prune prune_lim (App x y) else run_c $ k_prune prune_lim (App x y')
+                  else run_c $ k_prune prune_lim (App x' y)
+                     
+run_c x = x
+   
+simplify_one_step :: Comb -> Comb
+simplify_one_step (App (App K a) b) = a
+simplify_one_step (App (App (App S f) g) x) = (App (App f x) (App g x))
+simplify_one_step (App x y) = let x' = simplify_one_step x
+                              in if (x == x') then 
+                                  let y' = simplify_one_step y 
+                                  in if (y == y') then (App x y) else (App x y')
+                              else (App x' y)
+simplify_one_step x = x
+*/
+
+void reduceK(Comb** comb) {
+	*comb = (*comb)->left->right;
+}
+
+void reduceS(Comb** comb) {
+	Comb* f = (*comb)->left->left->right;
+	Comb* g = (*comb)->left->right;
+	Comb* x = (*comb)->right;
+	
+	(*comb)->left = malloc(sizeof(Comb));
+	(*comb)->left->val = NULL;
+	(*comb)->left->left = f;
+	(*comb)->left->right = x;
+	
+	(*comb)->right = malloc(sizeof(Comb));
+	(*comb)->right->val = NULL;
+	(*comb)->right->left = g;
+	(*comb)->right->right = x;
+}
+
+bool simplifyOneStep(Comb** comb) {
+		if ((*comb)->left == NULL) {
+		return false;
+	} else if (matchK(*comb)) {	
+		reduceK(comb);	
+		return true;
+	} else if (matchS(*comb)) {
+		reduceS(comb);
+		return true;
+	} else {
+		bool b1 = simplifyOneStep(&(*comb)->left);
+		if (!b1) {
+			bool b2 = simplifyOneStep(&(*comb)->right);
+			return b2;
+		}
+		return true;
+	}
 }

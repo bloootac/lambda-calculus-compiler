@@ -12,3 +12,6 @@ void printTree(Comb *comb);
 bool matchK(Comb* comb);
 bool matchS(Comb* comb);
 bool runComb(Comb** comb);
+void reduceK(Comb** comb);
+void reduceS(Comb** comb);
+bool simplifyOneStep(Comb** comb);
