@@ -8,9 +8,9 @@
 
 /*
 TODO:
- - conv from str to tree struct [DONE] (i think!)
- - look for reductions in tree struct <-
- - and perform reduction on struct
+ - fix runComb bug <------ :(
+ - add simplifyOneStep
+ - add kPrune ? 
 */
 
 void main() {
@@ -31,14 +31,19 @@ void main() {
     input[sb.st_size] = '\0';
 	
     //print input 
-    printf("%s\n", input);
+    printf("input:\n%s\n", input);
 	
 	//initialise struct
 	Comb* root = malloc(sizeof(Comb));
 	
+	printf("tree:\n");
 	strToTree(root, &(root->left), &(root->right), &(root->val), input);
-	
 	printTree(root);
+	
+	printf("\nrun:\n");
+	runComb(&root);
+	printTree(root);
+	
     //close file, de-allocate memory
     fclose(fptr);
     free(input);
@@ -59,6 +64,8 @@ void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str) {
 		//allocate memory for left + right terms
 		*left = malloc(sizeof(Comb));
 		*right = malloc(sizeof(Comb));
+		
+		*val = NULL;
 		
 		//str = +AB. find index so we can separate A and B
 		splitIndex = splitCombStr(str);
@@ -83,7 +90,6 @@ void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str) {
 	}
 	
 }
-
 
 //input: +AB. returns pointer to 1st char of B
 char* splitCombStr(char *str) {
@@ -121,4 +127,48 @@ void printTree(Comb *comb) {
 		
 	}
 	
+}
+
+bool matchK(Comb* comb) {
+	return (comb != NULL && comb->left != NULL && comb->left->left != NULL && comb->left->left->val != NULL && !strcmp(comb->left->left->val, "K"));
+}
+
+bool matchS(Comb* comb) {
+	return (comb != NULL && comb->left != NULL && comb->left->left != NULL && comb->left->left->left != NULL && comb->left->left->left->val != NULL && !strcmp(comb->left->left->left->val, "S"));
+}
+
+bool runComb(Comb** comb) {
+	if ((*comb)->left == NULL) {
+		//there is nothing we can do
+		return false;
+	} else if (matchK(*comb)) {
+		*comb = (*comb)->left->right;
+		//recurse ...
+		runComb(comb);
+		return true;
+	} else if (matchS(*comb)) {
+		Comb* f = (*comb)->left->left->right;
+		Comb* g = (*comb)->left->right;
+		Comb* x = (*comb)->right;
+		
+		
+		(*comb)->left->left = f;
+		(*comb)->left->right = x;
+		
+		(*comb)->right = malloc(sizeof(Comb));
+		(*comb)->right->val = NULL;
+		(*comb)->right->left = g;
+		(*comb)->right->right = x;
+		
+		runComb(comb);
+		return true;
+	} else {
+		bool b1 = runComb(&(*comb)->left);
+		bool b2 = runComb(&(*comb)->right);	
+		if (b1 || b2) {
+			runComb(comb);
+			return true;
+		} else return false; 
+	}
+
 }

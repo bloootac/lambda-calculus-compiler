@@ -9,3 +9,6 @@ void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str);
 char* splitCombStr(char *str);
 char* getVar(char *str);
 void printTree(Comb *comb);
+bool matchK(Comb* comb);
+bool matchS(Comb* comb);
+bool runComb(Comb** comb);
