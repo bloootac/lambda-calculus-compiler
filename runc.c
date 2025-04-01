@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,8 +8,8 @@
 /*
 TODO:
  - fix runComb bug [done] (i don't understand why but it's gone)
- - figure out when to free memory locations? it stops working when i try
- - add simplifyOneStep
+ - figure out when to free memory locations? it stops working when i try <-------
+ - fix simplifyOneStep (maybe related to ^ )
  - add kPrune ? 
 */
 
@@ -143,13 +142,13 @@ bool matchS(Comb* comb) {
 bool runComb(Comb** comb) {
 	
 	//TODO: we get a seg fault when running fib 5 f x...
-	
+	//maybe related to issue w/ freeing memory? runComb being run on a free ptr when it shouldn't be?
 	if ((*comb)->left == NULL) {
 		//there is nothing we can do
 		return false;
 	} else if (matchK(*comb)) {
 		reduceK(comb);
-		runComb(comb);	
+		runComb(comb);
 		return true;
 	} else if (matchS(*comb)) {
 		reduceS(comb);	
@@ -170,41 +169,26 @@ bool runComb(Comb** comb) {
 
 }
 
-/*
-run_c :: Comb -> Comb
-
-run_c (App (App K a) b) = run_c $ k_prune prune_lim a
-run_c (App (App (App K a) b) c) = run_c $ k_prune prune_lim (App a c)
-run_c (App c (App (App K a) b)) = run_c $ k_prune prune_lim(App c a)
-run_c (App (App (App S f) g) x) = run_c $ k_prune prune_lim (App (App f x) (App g x))
-
-run_c (App x y) = let x' = simplify_one_step x
-                  in if (x == x') then 
-                      let y' = simplify_one_step y 
-                      in if (y == y') then k_prune prune_lim (App x y) else run_c $ k_prune prune_lim (App x y')
-                  else run_c $ k_prune prune_lim (App x' y)
-                     
-run_c x = x
-   
-simplify_one_step :: Comb -> Comb
-simplify_one_step (App (App K a) b) = a
-simplify_one_step (App (App (App S f) g) x) = (App (App f x) (App g x))
-simplify_one_step (App x y) = let x' = simplify_one_step x
-                              in if (x == x') then 
-                                  let y' = simplify_one_step y 
-                                  in if (y == y') then (App x y) else (App x y')
-                              else (App x' y)
-simplify_one_step x = x
-*/
-
 void reduceK(Comb** comb) {
-	*comb = (*comb)->left->right;
+	Comb* a = (*comb)->left->right;
+	(*comb)->left->right = NULL; //so freeComb doesn't break when called on (*comb)->left
+	freeComb((*comb)->left);
+	freeComb((*comb)->right);
+	(*comb) = a;
 }
 
 void reduceS(Comb** comb) {
+	//printf("reducing "); printTree(*comb); printf("\n"); fflush(stdout);
+	//printf("reducing S\n"); fflush(stdout);
 	Comb* f = (*comb)->left->left->right;
 	Comb* g = (*comb)->left->right;
 	Comb* x = (*comb)->right;
+	Comb* newX = copyComb(x);
+	
+	freeComb((*comb)->left->left->left);
+	free((*comb)->left->left);
+	//free((*comb)->right);
+	
 	
 	(*comb)->left = malloc(sizeof(Comb));
 	(*comb)->left->val = NULL;
@@ -214,11 +198,13 @@ void reduceS(Comb** comb) {
 	(*comb)->right = malloc(sizeof(Comb));
 	(*comb)->right->val = NULL;
 	(*comb)->right->left = g;
-	(*comb)->right->right = x;
+	(*comb)->right->right = newX;
+	
+	//printf("reduced to "); printTree(*comb); printf("\n"); fflush(stdout);
 }
 
 bool simplifyOneStep(Comb** comb) {
-		if ((*comb)->left == NULL) {
+	if ((*comb)->left == NULL) {
 		return false;
 	} else if (matchK(*comb)) {	
 		reduceK(comb);	
@@ -234,4 +220,33 @@ bool simplifyOneStep(Comb** comb) {
 		}
 		return true;
 	}
+}
+
+void freeComb(Comb* comb) {
+	if (comb != NULL) {
+		if (comb->left == NULL) {
+			free(comb->val);
+			free(comb);
+		}	
+		else { 
+			freeComb(comb->left);
+			freeComb(comb->right);
+			free(comb);
+		}
+	}
+}
+
+Comb* copyComb(Comb* comb) {
+	Comb* newComb = malloc(sizeof(Comb));
+	if (comb->left == NULL) {
+		newComb->val = malloc(1 + strlen(comb->val));
+		strcpy(newComb->val, comb->val);
+		newComb->left = NULL;
+		newComb->right = NULL;
+	} else {
+		newComb->val = NULL;
+		newComb->left = copyComb(comb->left);
+		newComb->right = copyComb(comb->right);
+	}
+	return newComb;
 }
