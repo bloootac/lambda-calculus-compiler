@@ -7,10 +7,7 @@
 
 /*
 TODO:
- - fix runComb bug [done] (i don't understand why but it's gone)
- - figure out when to free memory locations? it stops working when i try <-------
- - fix simplifyOneStep (maybe related to ^ )
- - add kPrune ? 
+ - add reference count to Comb type
 */
 
 void main() {
@@ -37,7 +34,7 @@ void main() {
 	Comb* root = malloc(sizeof(Comb));
 	
 	printf("tree:\n");
-	strToTree(root, &(root->left), &(root->right), &(root->val), input);
+	strToTree(&(root->left), &(root->right), &(root->val), &(root->refs), input);
 	printTree(root);
 	
 	fflush(stdout);
@@ -46,14 +43,16 @@ void main() {
 	runComb(&root);
 	printTree(root);
 	
-    //close file, de-allocate memory
+	printf("\nref count: %d", root->right->refs);
+	
+    //close file, de-allocate memory. TODO de-allocate root too
     fclose(fptr);
     free(input);
     
     exit(0); 
 }
 
-void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str) {
+void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str) {
 	
 	if (!*str) {
 		printf("called strToTree on null string"); // ಠ_ಠ
@@ -66,16 +65,16 @@ void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str) {
 		//allocate memory for left + right terms
 		*left = malloc(sizeof(Comb));
 		*right = malloc(sizeof(Comb));
-		
+		*refs = 1;
 		*val = NULL;
 		
 		//str = +AB. find index so we can separate A and B
 		splitIndex = splitCombStr(str);
 		
 		//left = A
-		strToTree(*left, &((*left)->left), &((*left)->right), &((*left)->val), str + 1);
+		strToTree(&((*left)->left), &((*left)->right), &((*left)->val), &((*left)->refs), str + 1);
 		//right = B
-		strToTree(*right, &((*right)->left), &((*right)->right), &((*right)->val), splitIndex);
+		strToTree(&((*right)->left), &((*right)->right), &((*right)->val), &((*right)->refs), splitIndex);
 		
 	}
 	else { 
@@ -89,6 +88,8 @@ void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str) {
 		
 		//so we know this node is a leaf
 		*left = NULL; *right = NULL;
+		*refs = 1;
+		
 	}
 	
 }
@@ -115,10 +116,9 @@ char* getVar(char *str) {
 }
 
 void printTree(Comb *comb) {
-	
 	if (comb != NULL) {
-		
-		if (comb->left == NULL)  {
+		//printf("%d", comb->refs);
+		if (comb->val != NULL)  {
 			printf("%s", comb->val); 
 		}
 		else {
@@ -171,36 +171,53 @@ bool runComb(Comb** comb) {
 
 void reduceK(Comb** comb) {
 	Comb* a = (*comb)->left->right;
-	(*comb)->left->right = NULL; //so freeComb doesn't break when called on (*comb)->left
-	freeComb((*comb)->left);
-	freeComb((*comb)->right);
-	(*comb) = a;
+	
+	printf("K-reducing "); printTree(*comb); printf("\n"); fflush(stdout);
+	
+	removeCombRef((*comb)->left->left, false);
+	removeCombRef((*comb)->left, false);
+	removeCombRef((*comb)->right, true);
+	removeCombRef((*comb), false); //TODO: check ...
+	
+	
+	*comb = a;
+	
+	printf("reduced to "); printTree(*comb); printf("\n"); fflush(stdout);
 }
 
 void reduceS(Comb** comb) {
-	//printf("reducing "); printTree(*comb); printf("\n"); fflush(stdout);
-	//printf("reducing S\n"); fflush(stdout);
+	
+	printf("S-reducing "); printTree(*comb); printf("\n"); fflush(stdout);
+	
 	Comb* f = (*comb)->left->left->right;
 	Comb* g = (*comb)->left->right;
 	Comb* x = (*comb)->right;
-	Comb* newX = copyComb(x);
 	
-	freeComb((*comb)->left->left->left);
-	free((*comb)->left->left);
-	//free((*comb)->right);
+	removeCombRef((*comb)->left->left->left, false);
+	removeCombRef((*comb)->left->left, false);
+	removeCombRef((*comb)->left, false);
+	removeCombRef(*comb, false);
+	
+	addCombRef(x);
+	
+	*comb = malloc(sizeof(Comb));
+	(*comb)->refs = 1;
+	(*comb)->val = NULL;
 	
 	
 	(*comb)->left = malloc(sizeof(Comb));
+	(*comb)->left->refs = 1;
 	(*comb)->left->val = NULL;
 	(*comb)->left->left = f;
 	(*comb)->left->right = x;
 	
 	(*comb)->right = malloc(sizeof(Comb));
+	(*comb)->right->refs = 1;
 	(*comb)->right->val = NULL;
 	(*comb)->right->left = g;
-	(*comb)->right->right = newX;
+	(*comb)->right->right = x;
 	
-	//printf("reduced to "); printTree(*comb); printf("\n"); fflush(stdout);
+	printf("reduced to "); printTree(*comb); printf("\n"); fflush(stdout);
 }
 
 bool simplifyOneStep(Comb** comb) {
@@ -236,8 +253,10 @@ void freeComb(Comb* comb) {
 	}
 }
 
+//we don't need this...
 Comb* copyComb(Comb* comb) {
 	Comb* newComb = malloc(sizeof(Comb));
+	newComb->refs = comb->refs;
 	if (comb->left == NULL) {
 		newComb->val = malloc(1 + strlen(comb->val));
 		strcpy(newComb->val, comb->val);
@@ -249,4 +268,60 @@ Comb* copyComb(Comb* comb) {
 		newComb->right = copyComb(comb->right);
 	}
 	return newComb;
+}
+
+void addCombRef(Comb* comb) {
+	if (comb != NULL) {
+		
+		printf("adding ref for "); printTree(comb);
+		printf(" from %d to ", comb->refs);
+		
+		comb->refs += 1;
+		
+		printf("%d\n****\n", comb->refs);
+		
+		addCombRef(comb->left);
+		addCombRef(comb->right);
+	}
+}
+
+void removeCombRef(Comb* comb, bool recurse) {
+	if (comb != NULL) {
+		
+		printf("removing ref for ");
+		if (recurse) printTree(comb);
+		printf(" from %d to ", comb->refs);
+		
+		comb->refs -=1;
+		
+		printf("%d\n", comb->refs);
+		
+		if (recurse) {
+			removeCombRef(comb->left, true);
+			removeCombRef(comb->right, true);
+		}
+		
+		if (comb->refs == 0) {
+			printf("freeing node\n");
+			freeCombNode(comb);
+		}
+		
+		printf("\n*********\n");
+	}
+}
+
+void freeCombNode(Comb* comb) {
+	//if var, free var, refs, then ptr
+	//else, free left, right, refs, then ptr
+	if (comb->val != NULL) {
+		free(comb->val);
+		//do i need to free an int?
+	}
+	comb->val = NULL;
+	comb->left = NULL;
+	comb->right = NULL;
+	comb->refs = 0;
+	//*comb = NULL;
+	
+	free(comb);
 }

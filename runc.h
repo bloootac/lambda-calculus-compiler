@@ -2,10 +2,10 @@ typedef struct Comb {
 	char* val;
 	struct Comb* left;
 	struct Comb* right;
-	
+	int refs;
 } Comb;
 
-void strToTree(Comb* comb, Comb** left, Comb** right, char** val, char* str);
+void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str);
 char* splitCombStr(char *str);
 char* getVar(char *str);
 void printTree(Comb *comb);
@@ -17,3 +17,6 @@ void reduceS(Comb** comb);
 bool simplifyOneStep(Comb** comb);
 void freeComb(Comb* comb);
 Comb* copyComb(Comb* comb);
+void addCombRef(Comb* comb);
+void removeCombRef(Comb* comb, bool recurse);
+void freeCombNode(Comb* comb);
