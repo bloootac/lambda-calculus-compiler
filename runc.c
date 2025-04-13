@@ -55,6 +55,10 @@ void main() {
 	buildHeap(root, 0);
 	printHeap();
 	
+	//reduceK(2);
+	reduceS(2);
+	printHeap();
+	
     //close file, de-allocate memory. TODO de-allocate root too
     fclose(fptr);
     free(input);
@@ -152,12 +156,7 @@ void initHeap() {
 void buildHeap(Comb* comb, int index) {
 	//printf("\nbuilding index %d\n", index); fflush(stdout);
 	
-	if (heapLength >= heapSize - 2) {
-			
-		heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
-		heapSize *= 2;
-		//printf("reallocated heap. heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
-	}
+	checkReallocHeap();
 	
 	HeapComb* ptr = heap + index;
 	//printf("heap: %d\nptr: %d\n", heap, ptr);
@@ -184,6 +183,15 @@ void buildHeap(Comb* comb, int index) {
 	
 }
 
+void checkReallocHeap() {
+	if (heapLength >= heapSize - 2) {
+			
+		heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
+		heapSize *= 2;
+		//printf("reallocated heap. heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
+	}
+}
+
 void printHeap() {
 	
 	HeapComb* h = heap;
@@ -198,122 +206,116 @@ void printHeap() {
 		
 		//printf("\naddresses: h: %d, val: %d, left: %d, right: %d\n", h, &(h->val), &(h->left), &(h->right));
 		
-		h += 1;
+		h += 1; //this adds an offset of 16?? works fine ig
 	}
 	printf("\n");
+}
+
+bool matchK(int index) { 
+	int i = (heap + index)->left;
+	if (i != -1) {
+		char* str = (heap + (heap + i)->left)->val;
+		return str != NULL && !strcmp(str, "K");
+	}
+	return false;
+}
+
+bool matchS(int index) {
+	int i = (heap + index)->left;
+	if (i != -1) {
+		int j = (heap + i)->left;
+		if (j != -1) {
+			char* str = (heap + (heap + j)->left)->val;
+			return str != NULL && !strcmp(str, "S");
+		}
+	}
+	return false;
+}
+
+void reduceK(int index) {
+	HeapComb* i = heap + index;
+	HeapComb* a = heap + (heap + i->left)->right;
+	editFrame(i, a->val, a->left, a->right);
+}
+
+
+void reduceS(int index) {
+	
+	checkReallocHeap();
+	
+	HeapComb* i = heap + index;
+	HeapComb* j = heap + i->left;
+	
+	heapLength += 2;
+	HeapComb* end = heap + heapLength;
+	
+	editFrame(end - 2, NULL, (heap + j->left)->right, i->right);
+	editFrame(end - 1, NULL, j->right, i->right);
+	editFrame(i, NULL, heapLength - 2, heapLength - 1);
+	
+}
+
+void editFrame(HeapComb* i, char* val, int left, int right) {
+	i->val = val;
+	i->left = left;
+	i->right = right;
 }
 
 // *********************************************
 //things under here need to be rewritten
 
-bool matchK(Comb* comb) {
-	return (comb != NULL && comb->left != NULL && comb->left->left != NULL && comb->left->left->val != NULL && !strcmp(comb->left->left->val, "K"));
-}
+// bool runComb(Comb** comb, int headRefs) {
+	// if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
+	// if ((*comb)->left == NULL) {
+		// //there is nothing we can do
+		// return false;
+	// } else if (matchK(*comb)) {
+		// reduceK(comb, headRefs);
+		// if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
+		// runComb(comb, headRefs); 
+		// return true;
+	// } else if (matchS((*comb))) {
+		// reduceS(*comb);	
+		// runComb(comb, headRefs);
+		// return true;
+	// } else {
+		// bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
+		// if (!b1) {
+			// bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
+			// if (!b2) return false;
+			// runComb(comb, headRefs);
+			// return true;
+		// } else {
+			// runComb(comb, headRefs);
+			// return true;
+		// }
+	// }
 
-bool matchS(Comb* comb) {
-	return (comb != NULL && comb->left != NULL && comb->left->left != NULL && comb->left->left->left != NULL && comb->left->left->left->val != NULL && !strcmp(comb->left->left->left->val, "S"));
-}
-
-bool runComb(Comb** comb, int headRefs) {
-	if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
-	if ((*comb)->left == NULL) {
-		//there is nothing we can do
-		return false;
-	} else if (matchK(*comb)) {
-		reduceK(comb, headRefs);
-		if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
-		runComb(comb, headRefs); 
-		return true;
-	} else if (matchS((*comb))) {
-		reduceS(*comb);	
-		runComb(comb, headRefs);
-		return true;
-	} else {
-		bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
-		if (!b1) {
-			bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
-			if (!b2) return false;
-			runComb(comb, headRefs);
-			return true;
-		} else {
-			runComb(comb, headRefs);
-			return true;
-		}
-	}
-
-}
-
-void reduceK(Comb** comb, int headRefs) {
-	if (logComb) { printf("K-reducing "); printTree(*comb); printf("\n"); fflush(stdout); }
-	Comb* ptr = *comb;
-	Comb* a = ptr->left->right;
-	//int i = ptr->refs;
-	
-	removeCombRef(ptr->left->left, headRefs, false);
-	removeCombRef(ptr->left, headRefs, false);
-	removeCombRef(ptr->right, headRefs, true);
-	removeCombRef(ptr, headRefs, false);
-	
-	*comb = a;
-	
-	if (logComb) { printf("reduced to "); printTree(*comb); printf("\n"); fflush(stdout); }
-}
+// }
 
 
-void reduceS(Comb* comb) {
-	if (logComb) { printf("S-reducing "); printTree(comb); printf("\n"); fflush(stdout); }
-	
-	int i = comb->refs;
-	Comb* f = comb->left->left->right;
-	Comb* g = comb->left->right;
-	Comb* x = comb->right;
-	
-	removeCombRef(comb->left->left->left, i, false);
-	removeCombRef(comb->left->left, i, false);
-	removeCombRef(comb->left, i, false);
-	
-	addCombRef(x, i);
-	
-	Comb* fx = malloc(sizeof(Comb));
-	fx->left = f;
-	fx->right = x;
-	fx->val = NULL;
-	fx->refs = i;
-	
-	Comb* gx = malloc(sizeof(Comb));
-	gx->left = g;
-	gx->right = x;
-	gx->val = NULL;
-	gx->refs = i;
-	
-	
-	comb->left = fx;
-	comb->right = gx;
-	
-	if (logComb) { printf("reduced to "); printTree(comb); printf("\n"); fflush(stdout); }
-	
-}
 
-bool simplifyOneStep(Comb** comb, int headRefs) {
-	if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
-	if ((*comb)->left == NULL) {
-		return false;
-	} else if (matchK(*comb)) {	
-		reduceK(comb, headRefs);	
-		if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
-		return true;
-	} else if (matchS(*comb)) {
-		reduceS(*comb);
-		return true;
-	} else {
-		bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
-		if (!b1) {
-			bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
-			return b2;
-		}
-		return true;
-	}
-}
+
+// bool simplifyOneStep(Comb** comb, int headRefs) {
+	// if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
+	// if ((*comb)->left == NULL) {
+		// return false;
+	// } else if (matchK(*comb)) {	
+		// reduceK(comb, headRefs);	
+		// if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
+		// return true;
+	// } else if (matchS(*comb)) {
+		// reduceS(*comb);
+		// return true;
+	// } else {
+		// bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
+		// if (!b1) {
+			// bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
+			// return b2;
+		// }
+		// return true;
+	// }
+// }
 
 void freeComb(Comb* comb) {
 	if (comb != NULL) {

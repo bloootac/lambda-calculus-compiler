@@ -15,11 +15,14 @@ void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str);
 char* splitCombStr(char *str);
 char* getVar(char *str);
 void printTree(Comb *comb);
-bool matchK(Comb* comb);
-bool matchS(Comb* comb);
+
+bool matchK(int index);
+bool matchS(int index);
+
+
 bool runComb(Comb** comb, int headRefs);
-void reduceK(Comb** comb, int headRefs);
-void reduceS(Comb* comb);
+void reduceK(int index);
+void reduceS(int index);
 bool simplifyOneStep(Comb** comb, int headRefs);
 void freeComb(Comb* comb);
 Comb* copyComb(Comb* comb);
@@ -30,3 +33,5 @@ void freeCombNode(Comb* comb);
 void initHeap();
 void buildHeap(Comb* comb, int index);
 void printHeap();
+void checkReallocHeap();
+void editFrame(HeapComb* i, char* val, int left, int right);
