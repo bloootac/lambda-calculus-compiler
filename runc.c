@@ -8,11 +8,12 @@
 /*
 TODO:
  - implement stack
-	-> build stack from Comb tree [done ?]
-	-> change reduceK <----
+	-> build stack from Comb tree 
+	-> change reduceK 			  
 	-> change reduceS
 	-> change simplifyOneStep
 	-> change runComb
+    -> print tree from heap <----
 */
 
 bool logComb = false;
@@ -56,7 +57,7 @@ void main() {
 	printHeap();
 	
 	//reduceK(2);
-	reduceS(2);
+	runComb(0);
 	printHeap();
 	
     //close file, de-allocate memory. TODO de-allocate root too
@@ -293,7 +294,29 @@ void editFrame(HeapComb* i, char* val, int left, int right) {
 
 // }
 
-
+bool runComb(int index) {
+	
+	if ((heap + index)->left == -1) return false;
+	else if (matchK(index)) { 
+		reduceK(index);
+		runComb(index);
+		return true;
+	} else if (matchS(index)) {
+		reduceS(index);
+		runComb(index);
+		return true;
+	} else {
+		//TODO
+		bool b1 = simplifyOneStep((heap + index)->left);
+		if (!b1) {
+			bool b2 = simplifyOneStep((heap+index)->right);
+			if (!b2) return false;
+		}
+		runComb(index);
+		return true;
+	}
+		
+}
 
 
 // bool simplifyOneStep(Comb** comb, int headRefs) {
@@ -316,6 +339,25 @@ void editFrame(HeapComb* i, char* val, int left, int right) {
 		// return true;
 	// }
 // }
+
+bool simplifyOneStep(int index) {
+	if ((heap + index)->left == -1) return false;
+	else if (matchK(index)) {
+		reduceK(index);
+		return true;
+	}
+	else if (matchS(index)) {
+		reduceS(index);
+		return true;
+	} else {
+		bool b1 = simplifyOneStep((heap + index)->left);
+		if (!b1) {
+			bool b2 = simplifyOneStep((heap + index)->right);
+			return b2;
+		}
+		return true;
+	}
+}
 
 void freeComb(Comb* comb) {
 	if (comb != NULL) {

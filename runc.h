@@ -20,10 +20,11 @@ bool matchK(int index);
 bool matchS(int index);
 
 
-bool runComb(Comb** comb, int headRefs);
+bool runComb(int index);
 void reduceK(int index);
 void reduceS(int index);
-bool simplifyOneStep(Comb** comb, int headRefs);
+bool simplifyOneStep(int index);
+
 void freeComb(Comb* comb);
 Comb* copyComb(Comb* comb);
 void addCombRef(Comb* comb, int i);
