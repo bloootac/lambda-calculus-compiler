@@ -13,7 +13,8 @@ TODO:
 	-> change reduceS
 	-> change simplifyOneStep
 	-> change runComb
-    -> print tree from heap <----
+    -> print tree from heap and check 
+	-> fix segfault that only shows up in gdb ?? <------
 */
 
 bool logComb = false;
@@ -51,15 +52,17 @@ void main() {
 	
 	fflush(stdout);
 	
-	printf("\nbuilding heap:\n");
+	printf("\n\nbuilding heap:\n");
 	initHeap();
 	buildHeap(root, 0);
 	printHeap();
 	
 	//reduceK(2);
+	printf("\nrun:\n");
 	runComb(0);
 	printHeap();
-	
+	printf("\n");
+	heapToTree(0);
     //close file, de-allocate memory. TODO de-allocate root too
     fclose(fptr);
     free(input);
@@ -262,6 +265,17 @@ void editFrame(HeapComb* i, char* val, int left, int right) {
 	i->right = right;
 }
 
+void heapToTree(int index) {
+	HeapComb* i = heap + index;
+	if (i->val == NULL) {
+		//application. print left, then right
+		printf("+");
+		heapToTree(i->left);
+		heapToTree(i->right);
+	} else {
+		printf("%s", i->val);
+	}
+}
 // *********************************************
 //things under here need to be rewritten
 
