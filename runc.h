@@ -5,6 +5,12 @@ typedef struct Comb {
 	int refs;
 } Comb;
 
+typedef struct HeapComb {
+	char* val;
+	int left;
+	int right;
+} HeapComb;
+
 void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str);
 char* splitCombStr(char *str);
 char* getVar(char *str);
@@ -20,3 +26,7 @@ Comb* copyComb(Comb* comb);
 void addCombRef(Comb* comb, int i);
 void removeCombRef(Comb* comb, int i, bool recurse);
 void freeCombNode(Comb* comb);
+
+void initHeap();
+void buildHeap(Comb* comb, int index);
+void printHeap();

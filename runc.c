@@ -7,12 +7,19 @@
 
 /*
 TODO:
- - check if memory management works right...
- - clean up
- it's slow :(
+ - implement stack
+	-> build stack from Comb tree [done ?]
+	-> change reduceK <----
+	-> change reduceS
+	-> change simplifyOneStep
+	-> change runComb
 */
 
 bool logComb = false;
+
+HeapComb* heap = NULL;
+int heapLength = 0;
+int heapSize = 0;
 
 void main() {
     //try to open file
@@ -43,11 +50,10 @@ void main() {
 	
 	fflush(stdout);
 	
-	printf("\nrun:\n");
-	runComb(&root, 1);
-	printTree(root);
-	
-	//printf("\nref count: %d", root->right->refs);
+	printf("\nbuilding heap:\n");
+	initHeap();
+	buildHeap(root, 0);
+	printHeap();
 	
     //close file, de-allocate memory. TODO de-allocate root too
     fclose(fptr);
@@ -55,6 +61,8 @@ void main() {
     
     exit(0); 
 }
+
+// *************** file -> tree ***************
 
 void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str) {
 	
@@ -129,11 +137,74 @@ void printTree(Comb *comb) {
 			printf("+");
 			printTree(comb->left);
 			printTree(comb->right);
-		}
-		
+		}	
+	}
+}
+
+// *************** tree -> heap ***************
+
+void initHeap() {
+	heapSize = 200;
+	heap = (HeapComb*)malloc(heapSize * sizeof(HeapComb));
+	heapLength = 1;
+}
+
+void buildHeap(Comb* comb, int index) {
+	//printf("\nbuilding index %d\n", index); fflush(stdout);
+	
+	if (heapLength >= heapSize - 2) {
+			
+		heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
+		heapSize *= 2;
+		//printf("reallocated heap. heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
 	}
 	
+	HeapComb* ptr = heap + index;
+	//printf("heap: %d\nptr: %d\n", heap, ptr);
+	
+	if (comb->left == NULL && comb->right == NULL) {
+		//printf("building %s\n", comb->val); fflush(stdout);
+		ptr->val = comb->val;
+		ptr->left = -1; //use -1 as null value instead of 0? so i don't get confused later 
+		ptr->right = -1;
+		//printf("heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
+	} else {
+		//printf("heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
+		//printf("heap: %d\nptr: %d\n", heap, ptr);
+		heapLength += 2;
+		ptr->val = NULL;
+		ptr->left = heapLength - 2;
+		ptr->right = heapLength - 1;
+		
+		buildHeap(comb->left, heapLength - 2);
+		buildHeap(comb->right, (heap + index)->right); //because heapLength might have changed now
+		
+	}
+	//printf("****\n");
+	
 }
+
+void printHeap() {
+	
+	HeapComb* h = heap;
+	int i;
+	for (i = 0; i < heapLength; i++) {
+
+		if (h->val == NULL) {
+			printf("\n%d: (+, %d, %d)", i, h->left, h->right); fflush(stdout);
+		} else {
+			printf("\n%d: (%s, %d, %d)", i, h->val, h->left, h->right); fflush(stdout);
+		}
+		
+		//printf("\naddresses: h: %d, val: %d, left: %d, right: %d\n", h, &(h->val), &(h->left), &(h->right));
+		
+		h += 1;
+	}
+	printf("\n");
+}
+
+// *********************************************
+//things under here need to be rewritten
 
 bool matchK(Comb* comb) {
 	return (comb != NULL && comb->left != NULL && comb->left->left != NULL && comb->left->left->val != NULL && !strcmp(comb->left->left->val, "K"));
