@@ -201,7 +201,7 @@ void checkReallocHeap() {
 		} else {
 			heap = tempPtr;
 		}
-		printf("\nreallocated heap. size = %d\n", heapSize); fflush(stdout);
+		//printf("\nreallocated heap. size = %d\n", heapSize); fflush(stdout);
 		//heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
 		heapSize *= 2;
 		//printf("reallocated heap. heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
@@ -212,6 +212,9 @@ void printHeap() {
 	
 	HeapComb* h = heap;
 	int i;
+	
+	printf("heapSize: %d\nheapLength: %d\n", heapSize, heapLength);
+	
 	for (i = 0; i < heapLength; i++) {
 
 		if (h->val == NULL) {
@@ -229,20 +232,28 @@ void printHeap() {
 
 // *************** run ***************
 
+//35985
+
 bool matchK(int index) { 
+	//if (heapLength >= 35985) { printf("\nchecking for K at %d\n", index); fflush(stdout);}
+	
 	int i = (heap + index)->left;
-	if (i != -1) {
+	if (i != -1 && (heap + i)->left != -1) {
+		
 		char* str = (heap + (heap + i)->left)->val;
+		
 		return str != NULL && !strcmp(str, "K");
 	}
 	return false;
 }
 
 bool matchS(int index) {
+	//if (heapLength >= 35985) { printf("\nchecking for S at %d\n", index), fflush(stdout); }
+	
 	int i = (heap + index)->left;
 	if (i != -1) {
 		int j = (heap + i)->left;
-		if (j != -1) {
+		if (j != -1 && (heap + j)->left != -1) {
 			char* str = (heap + (heap + j)->left)->val;
 			return str != NULL && !strcmp(str, "S");
 		}
@@ -256,6 +267,7 @@ void reduceK(int index) {
 	editFrame(i, a->val, a->left, a->right);
 	
 	//logHeap();
+	//if (heapLength >= 35985)  { printHeap(); printf("\n*************\n\n"); }
 }
 
 
@@ -274,6 +286,7 @@ void reduceS(int index) {
 	editFrame(i, NULL, heapLength - 2, heapLength - 1);
 	
 	//logHeap();
+	//if (heapLength >= 35985) { printHeap(); printf("\n*************\n\n"); }
 	
 }
 
@@ -344,7 +357,7 @@ bool simplifyOneStep(int index) {
 
 void logHeap() {
 	
-	FILE* fptr = fopen("logFile.txt", "w");
+	FILE* fptr = fopen("logFile2.txt", "w");
 	HeapComb* h = heap;
 	int i;
 	
