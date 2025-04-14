@@ -37,3 +37,4 @@ void printHeap();
 void checkReallocHeap();
 void editFrame(HeapComb* i, char* val, int left, int right);
 void heapToTree(int index);
+void logHeap();

@@ -27,6 +27,7 @@ void main() {
     //try to open file
     const char* filename = "program.sk";
     FILE *fptr = fopen(filename, "r");
+	
     
     //exit(0) = success, exit(1) = failure
     if (!fptr) exit(1);
@@ -65,6 +66,7 @@ void main() {
 	heapToTree(0);
     //close file, de-allocate memory. TODO de-allocate root too
     fclose(fptr);
+	
     free(input);
     
     exit(0); 
@@ -189,8 +191,18 @@ void buildHeap(Comb* comb, int index) {
 
 void checkReallocHeap() {
 	if (heapLength >= heapSize - 2) {
-			
-		heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
+		
+		HeapComb* tempPtr = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
+		
+		if (tempPtr == NULL) {
+			printf("realloc failed. exiting program"); fflush(stdout);
+			free(heap);
+			exit(1);
+		} else {
+			heap = tempPtr;
+		}
+		printf("\nreallocated heap. size = %d\n", heapSize); fflush(stdout);
+		//heap = (HeapComb*)realloc(heap, heapSize * 2 * sizeof(HeapComb));
 		heapSize *= 2;
 		//printf("reallocated heap. heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(stdout);
 	}
@@ -215,6 +227,8 @@ void printHeap() {
 	printf("\n");
 }
 
+// *************** run ***************
+
 bool matchK(int index) { 
 	int i = (heap + index)->left;
 	if (i != -1) {
@@ -235,11 +249,13 @@ bool matchS(int index) {
 	}
 	return false;
 }
-
+ //TODO: print heap to file
 void reduceK(int index) {
 	HeapComb* i = heap + index;
 	HeapComb* a = heap + (heap + i->left)->right;
 	editFrame(i, a->val, a->left, a->right);
+	
+	//logHeap();
 }
 
 
@@ -256,6 +272,8 @@ void reduceS(int index) {
 	editFrame(end - 2, NULL, (heap + j->left)->right, i->right);
 	editFrame(end - 1, NULL, j->right, i->right);
 	editFrame(i, NULL, heapLength - 2, heapLength - 1);
+	
+	//logHeap();
 	
 }
 
@@ -276,37 +294,6 @@ void heapToTree(int index) {
 		printf("%s", i->val);
 	}
 }
-// *********************************************
-//things under here need to be rewritten
-
-// bool runComb(Comb** comb, int headRefs) {
-	// if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
-	// if ((*comb)->left == NULL) {
-		// //there is nothing we can do
-		// return false;
-	// } else if (matchK(*comb)) {
-		// reduceK(comb, headRefs);
-		// if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
-		// runComb(comb, headRefs); 
-		// return true;
-	// } else if (matchS((*comb))) {
-		// reduceS(*comb);	
-		// runComb(comb, headRefs);
-		// return true;
-	// } else {
-		// bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
-		// if (!b1) {
-			// bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
-			// if (!b2) return false;
-			// runComb(comb, headRefs);
-			// return true;
-		// } else {
-			// runComb(comb, headRefs);
-			// return true;
-		// }
-	// }
-
-// }
 
 bool runComb(int index) {
 	
@@ -333,28 +320,10 @@ bool runComb(int index) {
 }
 
 
-// bool simplifyOneStep(Comb** comb, int headRefs) {
-	// if (logComb) { printf("\nsimplifying "); printTree(*comb); printf("\n"); }
-	// if ((*comb)->left == NULL) {
-		// return false;
-	// } else if (matchK(*comb)) {	
-		// reduceK(comb, headRefs);	
-		// if (logComb) { printf("\ncheck - reduced to "); printTree(*comb); printf("\n"); }
-		// return true;
-	// } else if (matchS(*comb)) {
-		// reduceS(*comb);
-		// return true;
-	// } else {
-		// bool b1 = simplifyOneStep(&(*comb)->left, (*comb)->refs);
-		// if (!b1) {
-			// bool b2 = simplifyOneStep(&(*comb)->right, (*comb)->refs);
-			// return b2;
-		// }
-		// return true;
-	// }
-// }
-
 bool simplifyOneStep(int index) {
+	
+	
+	
 	if ((heap + index)->left == -1) return false;
 	else if (matchK(index)) {
 		reduceK(index);
@@ -373,6 +342,33 @@ bool simplifyOneStep(int index) {
 	}
 }
 
+void logHeap() {
+	
+	FILE* fptr = fopen("logFile.txt", "w");
+	HeapComb* h = heap;
+	int i;
+	
+	fprintf(fptr, "heapSize: %d\nheapLength: %d\n", heapSize, heapLength); fflush(fptr);
+	
+	for (i = 0; i < heapLength; i++) {
+
+		if (h->val == NULL) {
+			fprintf(fptr, "\n%d: (+, %d, %d)", i, h->left, h->right); fflush(fptr);
+		} else {
+			fprintf(fptr, "\n%d: (%s, %d, %d)", i, h->val, h->left, h->right); fflush(fptr);
+		}
+		
+		//printf("\naddresses: h: %d, val: %d, left: %d, right: %d\n", h, &(h->val), &(h->left), &(h->right));
+		
+		h += 1; //this adds an offset of 16?? works fine ig
+	}
+	fprintf(fptr, "\n"); fflush(fptr);
+	
+	fclose(fptr);
+	
+}
+
+//can get rid of these
 void freeComb(Comb* comb) {
 	if (comb != NULL) {
 		if (comb->left == NULL) {
@@ -387,7 +383,6 @@ void freeComb(Comb* comb) {
 	}
 }
 
-//we don't need this...
 Comb* copyComb(Comb* comb) {
 	Comb* newComb = malloc(sizeof(Comb));
 	newComb->refs = comb->refs;
