@@ -7,6 +7,7 @@
 
 /*
 TODO:
+ - rewrite runComb and simplifyOneStep to use loops <-----------
  - implement stack
 	-> build stack from Comb tree 
 	-> change reduceK 			  
@@ -14,7 +15,9 @@ TODO:
 	-> change simplifyOneStep
 	-> change runComb
     -> print tree from heap and check 
-	-> fix segfault that only shows up in gdb ?? <------
+	-> fix segfault @ fib 4 f x            <-----------------
+	
+	memory optimisation - reduce number of bits used to identify a variable?
 */
 
 bool logComb = false;
@@ -61,14 +64,15 @@ void main() {
 	//reduceK(2);
 	printf("\nrun:\n");
 	runComb(0);
-	printHeap();
+	//printHeap();
 	printf("\n");
 	heapToTree(0);
-    //close file, de-allocate memory. TODO de-allocate root too
+	
+    //close file, de-allocate memory. TODO de-allocate root too. and free the file data earlier?
     fclose(fptr);
 	
     free(input);
-    
+    free(heap);
     exit(0); 
 }
 
@@ -235,7 +239,6 @@ void printHeap() {
 //35985
 
 bool matchK(int index) { 
-	//if (heapLength >= 35985) { printf("\nchecking for K at %d\n", index); fflush(stdout);}
 	
 	int i = (heap + index)->left;
 	if (i != -1 && (heap + i)->left != -1) {
@@ -248,7 +251,6 @@ bool matchK(int index) {
 }
 
 bool matchS(int index) {
-	//if (heapLength >= 35985) { printf("\nchecking for S at %d\n", index), fflush(stdout); }
 	
 	int i = (heap + index)->left;
 	if (i != -1) {
@@ -267,7 +269,6 @@ void reduceK(int index) {
 	editFrame(i, a->val, a->left, a->right);
 	
 	//logHeap();
-	//if (heapLength >= 35985)  { printHeap(); printf("\n*************\n\n"); }
 }
 
 
@@ -308,34 +309,27 @@ void heapToTree(int index) {
 	}
 }
 
-bool runComb(int index) {
+void runComb(int index) {
 	
-	if ((heap + index)->left == -1) return false;
-	else if (matchK(index)) { 
-		reduceK(index);
-		runComb(index);
-		return true;
-	} else if (matchS(index)) {
-		reduceS(index);
-		runComb(index);
-		return true;
-	} else {
-		//TODO
-		bool b1 = simplifyOneStep((heap + index)->left);
-		if (!b1) {
-			bool b2 = simplifyOneStep((heap+index)->right);
-			if (!b2) return false;
+	while ((heap + index)->left != -1) {
+		if (matchK(index)) {
+			reduceK(index);
+		} else if (matchS(index)) {
+			reduceS(index);
+		} else {
+			bool b1 = simplifyOneStep((heap + index)->left);
+			
+			if (!b1) {
+				bool b2 = simplifyOneStep((heap + index)->right);
+				if (!b2) break;
+			}
+			
 		}
-		runComb(index);
-		return true;
 	}
-		
 }
 
 
 bool simplifyOneStep(int index) {
-	
-	
 	
 	if ((heap + index)->left == -1) return false;
 	else if (matchK(index)) {
@@ -379,89 +373,4 @@ void logHeap() {
 	
 	fclose(fptr);
 	
-}
-
-//can get rid of these
-void freeComb(Comb* comb) {
-	if (comb != NULL) {
-		if (comb->left == NULL) {
-			free(comb->val);
-			free(comb);
-		}	
-		else { 
-			freeComb(comb->left);
-			freeComb(comb->right);
-			free(comb);
-		}
-	}
-}
-
-Comb* copyComb(Comb* comb) {
-	Comb* newComb = malloc(sizeof(Comb));
-	newComb->refs = comb->refs;
-	if (comb->left == NULL) {
-		newComb->val = malloc(1 + strlen(comb->val));
-		strcpy(newComb->val, comb->val);
-		newComb->left = NULL;
-		newComb->right = NULL;
-	} else {
-		newComb->val = NULL;
-		newComb->left = copyComb(comb->left);
-		newComb->right = copyComb(comb->right);
-	}
-	return newComb;
-}
-
-void addCombRef(Comb* comb, int i) {
-	if (comb != NULL) {
-		
-		if (logComb) {
-			printf("adding ref for "); printTree(comb);
-			printf(" from %d to ", comb->refs);		
-		}
-
-		comb->refs += i;
-		
-		 if (logComb) printf("%d\n****\n", comb->refs);
-		
-		addCombRef(comb->left, i);
-		addCombRef(comb->right, i);
-	}
-}
-
-void removeCombRef(Comb* comb, int i, bool recurse) {
-	if (comb != NULL) {
-		if (logComb) {
-			printf("removing ref for ");
-			if (recurse) printTree(comb);
-			printf(" from %d to ", comb->refs);
-		}
-		comb->refs -= i;
-		
-		if (logComb) printf("%d\n", comb->refs);
-		
-		if (recurse) {
-			removeCombRef(comb->left, i, true);
-			removeCombRef(comb->right, i, true);
-		}
-		
-		if (comb->refs == 0) {
-			if (logComb) printf("freeing node\n");
-			freeCombNode(comb);
-		}
-		
-		if (logComb) printf("\n*********\n");
-	}
-}
-
-void freeCombNode(Comb* comb) {
-	if (comb->val != NULL) {
-		free(comb->val);
-	}
-	comb->val = NULL;
-	comb->left = NULL;
-	comb->right = NULL;
-	comb->refs = 0;
-	
-	free(comb);
 }

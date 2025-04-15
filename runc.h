@@ -20,16 +20,10 @@ bool matchK(int index);
 bool matchS(int index);
 
 
-bool runComb(int index);
+void runComb(int index);
 void reduceK(int index);
 void reduceS(int index);
 bool simplifyOneStep(int index);
-
-void freeComb(Comb* comb);
-Comb* copyComb(Comb* comb);
-void addCombRef(Comb* comb, int i);
-void removeCombRef(Comb* comb, int i, bool recurse);
-void freeCombNode(Comb* comb);
 
 void initHeap();
 void buildHeap(Comb* comb, int index);
