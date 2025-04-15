@@ -7,7 +7,7 @@
 
 /*
 TODO:
- - rewrite runComb and simplifyOneStep to use loops <-----------
+ - rewrite simplifyOneStep to use loops <-----------
  - implement stack
 	-> build stack from Comb tree 
 	-> change reduceK 			  
@@ -56,14 +56,14 @@ void main() {
 	
 	fflush(stdout);
 	
-	printf("\n\nbuilding heap:\n");
+	// printf("\n\nbuilding heap:\n");
 	initHeap();
 	buildHeap(root, 0);
-	printHeap();
+	// printHeap();
 	
 	//reduceK(2);
 	printf("\nrun:\n");
-	runComb(0);
+	runComb();
 	//printHeap();
 	printf("\n");
 	heapToTree(0);
@@ -286,8 +286,6 @@ void reduceS(int index) {
 	editFrame(end - 1, NULL, j->right, i->right);
 	editFrame(i, NULL, heapLength - 2, heapLength - 1);
 	
-	//logHeap();
-	//if (heapLength >= 35985) { printHeap(); printf("\n*************\n\n"); }
 	
 }
 
@@ -300,7 +298,6 @@ void editFrame(HeapComb* i, char* val, int left, int right) {
 void heapToTree(int index) {
 	HeapComb* i = heap + index;
 	if (i->val == NULL) {
-		//application. print left, then right
 		printf("+");
 		heapToTree(i->left);
 		heapToTree(i->right);
@@ -309,44 +306,54 @@ void heapToTree(int index) {
 	}
 }
 
-void runComb(int index) {
+void runComb() {
+	bool reductionFound = true;
+	int* indexPtr = malloc(sizeof(int));
 	
-	while ((heap + index)->left != -1) {
-		if (matchK(index)) {
-			reduceK(index);
-		} else if (matchS(index)) {
-			reduceS(index);
-		} else {
-			bool b1 = simplifyOneStep((heap + index)->left);
-			
-			if (!b1) {
-				bool b2 = simplifyOneStep((heap + index)->right);
-				if (!b2) break;
-			}
+	while (reductionFound) {
+		reductionFound = false;
+		
+		//findReduction returns 0 if none, 1 if K, 2 if S. changes pointer to the location
+		char c = findReduction(indexPtr, 0);
+		
+		switch (c) {
+			case 1:
+				reductionFound = true;
+				reduceK(*indexPtr);
+				break;
+			case 2:
+				reductionFound = true;
+				reduceS(*indexPtr);
+				break;
 			
 		}
+		//if 0, reductionFound left at false, loop finishes
+		
 	}
 }
 
-
-bool simplifyOneStep(int index) {
+/* DFS at index. writes location of reduction to indexPtr
+   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction */
+char findReduction(int* indexPtr, int index) {
 	
-	if ((heap + index)->left == -1) return false;
+	if ((heap + index)->left == -1) return 0;
 	else if (matchK(index)) {
-		reduceK(index);
-		return true;
-	}
-	else if (matchS(index)) {
-		reduceS(index);
-		return true;
+		*indexPtr = index;
+		return 1;
+	} else if (matchS(index)) {
+		*indexPtr = index;
+		return 2;
 	} else {
-		bool b1 = simplifyOneStep((heap + index)->left);
-		if (!b1) {
-			bool b2 = simplifyOneStep((heap + index)->right);
+		
+		char b1 = findReduction(indexPtr, (heap + index)->left);
+		if (b1 == 0) {
+			char b2 = findReduction(indexPtr, (heap + index)->right);
 			return b2;
 		}
-		return true;
+		return b1;
+		
 	}
+	
 }
 
 void logHeap() {

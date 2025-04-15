@@ -20,10 +20,10 @@ bool matchK(int index);
 bool matchS(int index);
 
 
-void runComb(int index);
+void runComb();
 void reduceK(int index);
 void reduceS(int index);
-bool simplifyOneStep(int index);
+char findReduction(int* indexPtr, int index);
 
 void initHeap();
 void buildHeap(Comb* comb, int index);
