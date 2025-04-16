@@ -11,6 +11,11 @@ typedef struct HeapComb {
 	int right;
 } HeapComb;
 
+typedef struct CombStack {
+	int index;
+	struct CombStack* next;
+} CombStack;
+
 void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str);
 char* splitCombStr(char *str);
 char* getVar(char *str);
@@ -23,8 +28,9 @@ bool matchS(int index);
 void runComb();
 void reduceK(int index);
 void reduceS(int index);
-char findReduction(int* indexPtr);
+int findReduction(int* indexPtr);
 char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished);
+int findReductionDFS(int* indexPtr, int depth, bool* notFinished);
 
 void initHeap();
 void buildHeap(Comb* comb, int index);

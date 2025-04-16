@@ -317,51 +317,54 @@ void runComb() {
 	}
 }
 
-char findReduction(int* indexPtr) {
-	//iterative dfs
+// char findReduction(int* indexPtr) {
+	// //iterative dfs
 	
-	bool* notFinished = malloc(sizeof(bool));
-	*notFinished = true;
-	int depth = 0;
-	char c = 0;
-	while (c == 0 && *notFinished) {
-		//printf("c = %d", c);
-		*notFinished = false;
-		depth += 5;
-		c = findReductionHelper(indexPtr, 0, depth, notFinished);
-	}
-	return c;
+	// bool* notFinished = malloc(sizeof(bool));
+	// *notFinished = true;
+	// int depth = 0;
+	// char c = 0;
+	// while (c == 0 && *notFinished) {
+		// //printf("c = %d", c);
+		// *notFinished = false;
+		// depth += 5;
+		// c = findReductionHelper(indexPtr, 0, depth, notFinished);
+	// }
+	// return c;
 	
-}
+// }
 
-char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished) {
-	if (depth == 0) {
-		//stop
-		if ((heap + index)->left != -1) *notFinished = true;
-		return 0;
-	} 
+// char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished) {
+	// if (depth == 0) {
+		// if ((heap + index)->left != -1) *notFinished = true;
+		// return 0;
+	// } 
 	
-	if ((heap + index)->left == -1) return 0;
-	else if (matchK(index)) {
-		*indexPtr = index;
-		return 1;
-	} else if (matchS(index)) {
-		*indexPtr = index;
-		return 2;
-	} else {
-		char b1 = findReductionHelper(indexPtr, (heap + index)->left, depth - 1, notFinished);
-		if (b1 == 0) {
-			char b2 = findReductionHelper(indexPtr, (heap + index)->right, depth - 1, notFinished);
-			return b2;
-		}
-		return b1;
-	}
+	// if ((heap + index)->left == -1) return 0;
+	// else if (matchK(index)) {
+		// *indexPtr = index;
+		// return 1;
+	// } else if (matchS(index)) {
+		// *indexPtr = index;
+		// return 2;
+	// } else {
+		// char b1 = findReductionHelper(indexPtr, (heap + index)->left, depth - 1, notFinished);
+		// if (b1 == 0) {
+			// char b2 = findReductionHelper(indexPtr, (heap + index)->right, depth - 1, notFinished);
+			// return b2;
+		// }
+		// return b1;
+	// }
 	
-	//otherwise ...
-}
+// }
 
 /* DFS at index. writes location of reduction to indexPtr
-   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction */
+   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction
+
+	S a b (Kcd)
+	a (Kcd) b (Kcd)
+
+   */
 // char findReduction(int* indexPtr, int index) {
 	
 	// if ((heap + index)->left == -1) return 0;
@@ -383,6 +386,67 @@ char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished)
 	// }
 	
 // }
+
+int findReduction(int* indexPtr) {
+	bool* notFinished = malloc(sizeof(bool));
+	*notFinished = true;
+	int depth = 0;
+	int result = 0;
+	while (result == 0 && *notFinished) {
+		*notFinished = false;
+		depth += 1;
+		result = findReductionDFS(indexPtr, depth, notFinished);
+		// printf("result = %d", result);
+	}
+	
+	return result;
+	
+}
+
+int findReductionDFS(int* indexPtr, int depth, bool* notFinished) {
+	int stackSize = 100;
+	int* combStack = (int*)malloc(stackSize * sizeof(int));
+	int ptr = 0;
+	int result = 0;
+	int index;
+	
+	*combStack = 0;
+	
+	while (ptr != -1) {
+		
+		index = *(combStack + ptr);
+		ptr--;
+		
+		if (matchK(index)) {
+			*indexPtr = index;
+			free(combStack);
+			return 1;
+		} else if (matchS(index)) {
+			*indexPtr = index;
+			free(combStack);
+			return 2;
+		} else {
+			if ((heap + index)->left != -1 && ptr < depth) {
+				
+				//resize
+				if (stackSize <= ptr - 2) {
+					stackSize *= 2;
+					combStack = realloc(combStack, stackSize * sizeof(int));
+				}
+				
+				ptr += 2;
+				*(combStack + ptr - 1) = (heap+index)->right;
+				*(combStack + ptr) = (heap + index)->left;
+			} else if (ptr >= depth && (heap + index)->left != -1) {
+				*notFinished = true;
+			}
+		}
+		
+	}
+	return result;
+	
+	
+}
 
 void logHeap() {
 	
