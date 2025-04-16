@@ -5,20 +5,6 @@
 #include <stdbool.h>
 #include "runc.h"
 
-/*
-TODO:
- - rewrite simplifyOneStep to use loops <-----------
- - implement stack
-	-> build stack from Comb tree 
-	-> change reduceK 			  
-	-> change reduceS
-	-> change simplifyOneStep
-	-> change runComb
-    -> print tree from heap and check 
-	-> fix segfault @ fib 4 f x            <-----------------
-	
-	memory optimisation - reduce number of bits used to identify a variable?
-*/
 
 bool logComb = false;
 
@@ -314,7 +300,7 @@ void runComb() {
 		reductionFound = false;
 		
 		//findReduction returns 0 if none, 1 if K, 2 if S. changes pointer to the location
-		char c = findReduction(indexPtr, 0);
+		char c = findReduction(indexPtr);
 		
 		switch (c) {
 			case 1:
@@ -325,16 +311,35 @@ void runComb() {
 				reductionFound = true;
 				reduceS(*indexPtr);
 				break;
-			
 		}
 		//if 0, reductionFound left at false, loop finishes
 		
 	}
 }
 
-/* DFS at index. writes location of reduction to indexPtr
-   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction */
-char findReduction(int* indexPtr, int index) {
+char findReduction(int* indexPtr) {
+	//iterative dfs
+	
+	bool* notFinished = malloc(sizeof(bool));
+	*notFinished = true;
+	int depth = 0;
+	char c = 0;
+	while (c == 0 && *notFinished) {
+		//printf("c = %d", c);
+		*notFinished = false;
+		depth += 5;
+		c = findReductionHelper(indexPtr, 0, depth, notFinished);
+	}
+	return c;
+	
+}
+
+char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished) {
+	if (depth == 0) {
+		//stop
+		if ((heap + index)->left != -1) *notFinished = true;
+		return 0;
+	} 
 	
 	if ((heap + index)->left == -1) return 0;
 	else if (matchK(index)) {
@@ -344,17 +349,40 @@ char findReduction(int* indexPtr, int index) {
 		*indexPtr = index;
 		return 2;
 	} else {
-		
-		char b1 = findReduction(indexPtr, (heap + index)->left);
+		char b1 = findReductionHelper(indexPtr, (heap + index)->left, depth - 1, notFinished);
 		if (b1 == 0) {
-			char b2 = findReduction(indexPtr, (heap + index)->right);
+			char b2 = findReductionHelper(indexPtr, (heap + index)->right, depth - 1, notFinished);
 			return b2;
 		}
 		return b1;
-		
 	}
 	
+	//otherwise ...
 }
+
+/* DFS at index. writes location of reduction to indexPtr
+   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction */
+// char findReduction(int* indexPtr, int index) {
+	
+	// if ((heap + index)->left == -1) return 0;
+	// else if (matchK(index)) {
+		// *indexPtr = index;
+		// return 1;
+	// } else if (matchS(index)) {
+		// *indexPtr = index;
+		// return 2;
+	// } else {
+		
+		// char b1 = findReduction(indexPtr, (heap + index)->left);
+		// if (b1 == 0) {
+			// char b2 = findReduction(indexPtr, (heap + index)->right);
+			// return b2;
+		// }
+		// return b1;
+		
+	// }
+	
+// }
 
 void logHeap() {
 	

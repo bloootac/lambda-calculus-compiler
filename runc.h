@@ -23,7 +23,8 @@ bool matchS(int index);
 void runComb();
 void reduceK(int index);
 void reduceS(int index);
-char findReduction(int* indexPtr, int index);
+char findReduction(int* indexPtr);
+char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished);
 
 void initHeap();
 void buildHeap(Comb* comb, int index);
