@@ -300,7 +300,7 @@ void runComb() {
 		reductionFound = false;
 		
 		//findReduction returns 0 if none, 1 if K, 2 if S. changes pointer to the location
-		char c = findReductionBFS(indexPtr);
+		char c = findReductionDFS(indexPtr);
 		
 		switch (c) {
 			case 1:
@@ -317,95 +317,7 @@ void runComb() {
 	}
 }
 
-int findReductionIDFS(int* indexPtr) {
-	//bool* notFinished = malloc(sizeof(bool));
-	//*notFinished = true;
-	int depth = 1;
-	int result = -1;
-	while (result == -1) {
-		//*notFinished = false;
-		depth += 5;
-		result = findReductionDFS(indexPtr, depth);
-		//printf("result = %d", result);
-	}
-	
-	return result;
-	
-}
-
-int findReductionBFS(int* indexPtr) {
-	int queueSize = 100;
-	int* combQueue = (int*)malloc(queueSize * sizeof(int));
-	
-	int backPtr = 0; int frontPtr = 0; int queueLength = 1;
-	int result = 0;
-	int index;
-	
-	*combQueue = 0;
-	
-	while (queueLength > 0) {
-		index = *(combQueue + frontPtr);
-		//TODO: make queue circular...fix it
-		frontPtr++;
-		if (frontPtr >= queueSize) frontPtr = frontPtr % queueSize;
-		queueLength--;
-		
-		if (matchK(index)) {
-			*indexPtr = index;
-			free(combQueue);
-			return 1;
-		} else if (matchS(index)) {
-			*indexPtr = index;
-			free(combQueue);
-			return 2;
-		} else if ((heap + index)->left != -1) {
-			
-			if (queueSize - 2 <= queueLength) {
-				//resize, change up queue, continue
-				
-				queueSize *= 2;
-				combQueue = (int*)realloc(combQueue, queueSize * sizeof(int));
-				
-				//now copy stuff over ...
-				if (backPtr < frontPtr) {
-					
-					memcpy(combQueue + (queueSize / 2), combQueue, (backPtr + 1) * sizeof(int));
-					
-					memcpy(combQueue, combQueue + frontPtr, queueLength * sizeof(int));
-					
-					frontPtr = 0;
-					backPtr = queueLength - 1;
-				}
-				backPtr += 2;
-				queueLength += 2;
-				
-				*(combQueue + backPtr - 1) = (heap + index)->left;
-				*(combQueue + backPtr) = (heap + index)->right;
-				
-			} else { 
-			
-				backPtr += 2;
-				queueLength += 2;
-				
-				*(combQueue + (backPtr - 1) % queueSize) = (heap + index)->left;
-				*(combQueue + (backPtr % queueSize)) = (heap + index)->right;
-				if (backPtr >= queueSize) backPtr = backPtr % queueSize;
-				
-				
-			}
-			
-			
-			
-			
-		}
-	}
-	
-	free(combQueue);
-	return 0;
-	
-}
-
-int findReductionDFS(int* indexPtr, int depth) {
+int findReductionDFS(int* indexPtr) {
 	int stackSize = 100;
 	int* combStack = (int*)malloc(stackSize * sizeof(int));
 	
@@ -422,7 +334,6 @@ int findReductionDFS(int* indexPtr, int depth) {
 		index = *(combStack + ptr);
 		//not popping yet
 		
-		//TODO: where to resize ?
 		if (!backtracking) {
 			if (matchK(index)) {
 				*indexPtr = index;
@@ -436,7 +347,7 @@ int findReductionDFS(int* indexPtr, int depth) {
 			
 				int left = (heap + index)->left;
 				
-				if (left != -1 && ptr < depth) {
+				if (left != -1) {
 					
 					if (stackSize <= ptr - 1) { 
 						stackSize *= 2;
@@ -446,7 +357,7 @@ int findReductionDFS(int* indexPtr, int depth) {
 					ptr++;
 					*(combStack + ptr) = left;
 				} else {
-					if (left != -1) result = -1; //mark not finished
+					//if (left != -1) result = -1; //mark not finished
 					
 					backtracking = true;
 					ptr--;

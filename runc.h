@@ -28,9 +28,7 @@ bool matchS(int index);
 void runComb();
 void reduceK(int index);
 void reduceS(int index);
-int findReductionIDFS(int* indexPtr);
-int findReductionDFS(int* indexPtr, int depth);
-int findReductionBFS(int* indexPtr);
+int findReductionDFS(int* indexPtr);
 
 void initHeap();
 void buildHeap(Comb* comb, int index);
