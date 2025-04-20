@@ -54,7 +54,7 @@ void main() {
 	printf("\n");
 	heapToTree(0);
 	
-    //close file, de-allocate memory. TODO de-allocate root too. and free the file data earlier?
+    //close file, de-allocate memory. TODO free the file data earlier?
     fclose(fptr);
 	
     free(input);
@@ -248,7 +248,7 @@ bool matchS(int index) {
 	}
 	return false;
 }
- //TODO: print heap to file
+
 void reduceK(int index) {
 	HeapComb* i = heap + index;
 	HeapComb* a = heap + (heap + i->left)->right;
@@ -300,7 +300,7 @@ void runComb() {
 		reductionFound = false;
 		
 		//findReduction returns 0 if none, 1 if K, 2 if S. changes pointer to the location
-		char c = findReduction(indexPtr);
+		char c = findReductionBFS(indexPtr);
 		
 		switch (c) {
 			case 1:
@@ -317,136 +317,174 @@ void runComb() {
 	}
 }
 
-// char findReduction(int* indexPtr) {
-	// //iterative dfs
-	
-	// bool* notFinished = malloc(sizeof(bool));
-	// *notFinished = true;
-	// int depth = 0;
-	// char c = 0;
-	// while (c == 0 && *notFinished) {
-		// //printf("c = %d", c);
-		// *notFinished = false;
-		// depth += 5;
-		// c = findReductionHelper(indexPtr, 0, depth, notFinished);
-	// }
-	// return c;
-	
-// }
-
-// char findReductionHelper(int* indexPtr, int index, int depth, bool* notFinished) {
-	// if (depth == 0) {
-		// if ((heap + index)->left != -1) *notFinished = true;
-		// return 0;
-	// } 
-	
-	// if ((heap + index)->left == -1) return 0;
-	// else if (matchK(index)) {
-		// *indexPtr = index;
-		// return 1;
-	// } else if (matchS(index)) {
-		// *indexPtr = index;
-		// return 2;
-	// } else {
-		// char b1 = findReductionHelper(indexPtr, (heap + index)->left, depth - 1, notFinished);
-		// if (b1 == 0) {
-			// char b2 = findReductionHelper(indexPtr, (heap + index)->right, depth - 1, notFinished);
-			// return b2;
-		// }
-		// return b1;
-	// }
-	
-// }
-
-/* DFS at index. writes location of reduction to indexPtr
-   returns 0 for no reduction, 1 for K-reduction, 2 for S-reduction
-
-	S a b (Kcd)
-	a (Kcd) b (Kcd)
-
-   */
-// char findReduction(int* indexPtr, int index) {
-	
-	// if ((heap + index)->left == -1) return 0;
-	// else if (matchK(index)) {
-		// *indexPtr = index;
-		// return 1;
-	// } else if (matchS(index)) {
-		// *indexPtr = index;
-		// return 2;
-	// } else {
-		
-		// char b1 = findReduction(indexPtr, (heap + index)->left);
-		// if (b1 == 0) {
-			// char b2 = findReduction(indexPtr, (heap + index)->right);
-			// return b2;
-		// }
-		// return b1;
-		
-	// }
-	
-// }
-
-int findReduction(int* indexPtr) {
-	bool* notFinished = malloc(sizeof(bool));
-	*notFinished = true;
-	int depth = 0;
-	int result = 0;
-	while (result == 0 && *notFinished) {
-		*notFinished = false;
-		depth += 1;
-		result = findReductionDFS(indexPtr, depth, notFinished);
-		// printf("result = %d", result);
+int findReductionIDFS(int* indexPtr) {
+	//bool* notFinished = malloc(sizeof(bool));
+	//*notFinished = true;
+	int depth = 1;
+	int result = -1;
+	while (result == -1) {
+		//*notFinished = false;
+		depth += 5;
+		result = findReductionDFS(indexPtr, depth);
+		//printf("result = %d", result);
 	}
 	
 	return result;
 	
 }
 
-int findReductionDFS(int* indexPtr, int depth, bool* notFinished) {
+int findReductionBFS(int* indexPtr) {
+	int queueSize = 100;
+	int* combQueue = (int*)malloc(queueSize * sizeof(int));
+	
+	int backPtr = 0; int frontPtr = 0; int queueLength = 1;
+	int result = 0;
+	int index;
+	
+	*combQueue = 0;
+	
+	while (queueLength > 0) {
+		index = *(combQueue + frontPtr);
+		//TODO: make queue circular...fix it
+		frontPtr++;
+		if (frontPtr >= queueSize) frontPtr = frontPtr % queueSize;
+		queueLength--;
+		
+		if (matchK(index)) {
+			*indexPtr = index;
+			free(combQueue);
+			return 1;
+		} else if (matchS(index)) {
+			*indexPtr = index;
+			free(combQueue);
+			return 2;
+		} else if ((heap + index)->left != -1) {
+			
+			if (queueSize - 2 <= queueLength) {
+				//resize, change up queue, continue
+				
+				queueSize *= 2;
+				combQueue = (int*)realloc(combQueue, queueSize * sizeof(int));
+				
+				//now copy stuff over ...
+				if (backPtr < frontPtr) {
+					
+					memcpy(combQueue + (queueSize / 2), combQueue, (backPtr + 1) * sizeof(int));
+					
+					memcpy(combQueue, combQueue + frontPtr, queueLength * sizeof(int));
+					
+					frontPtr = 0;
+					backPtr = queueLength - 1;
+				}
+				backPtr += 2;
+				queueLength += 2;
+				
+				*(combQueue + backPtr - 1) = (heap + index)->left;
+				*(combQueue + backPtr) = (heap + index)->right;
+				
+			} else { 
+			
+				backPtr += 2;
+				queueLength += 2;
+				
+				*(combQueue + (backPtr - 1) % queueSize) = (heap + index)->left;
+				*(combQueue + (backPtr % queueSize)) = (heap + index)->right;
+				if (backPtr >= queueSize) backPtr = backPtr % queueSize;
+				
+				
+			}
+			
+			
+			
+			
+		}
+	}
+	
+	free(combQueue);
+	return 0;
+	
+}
+
+int findReductionDFS(int* indexPtr, int depth) {
 	int stackSize = 100;
 	int* combStack = (int*)malloc(stackSize * sizeof(int));
+	
 	int ptr = 0;
 	int result = 0;
 	int index;
 	
+	bool backtracking = false;
+	int prevIndex;
+	
 	*combStack = 0;
 	
 	while (ptr != -1) {
-		
 		index = *(combStack + ptr);
-		ptr--;
+		//not popping yet
 		
-		if (matchK(index)) {
-			*indexPtr = index;
-			free(combStack);
-			return 1;
-		} else if (matchS(index)) {
-			*indexPtr = index;
-			free(combStack);
-			return 2;
-		} else {
-			if ((heap + index)->left != -1 && ptr < depth) {
+		//TODO: where to resize ?
+		if (!backtracking) {
+			if (matchK(index)) {
+				*indexPtr = index;
+				free(combStack);
+				return 1;
+			} else if (matchS(index)) {
+				*indexPtr = index;
+				free(combStack);
+				return 2;
+			} else {
+			
+				int left = (heap + index)->left;
 				
-				//resize
-				if (stackSize <= ptr - 2) {
+				if (left != -1 && ptr < depth) {
+					
+					if (stackSize <= ptr - 1) { 
+						stackSize *= 2;
+					    combStack = realloc(combStack, stackSize * sizeof(int));
+					} 
+					
+					ptr++;
+					*(combStack + ptr) = left;
+				} else {
+					if (left != -1) result = -1; //mark not finished
+					
+					backtracking = true;
+					ptr--;
+					prevIndex = index;
+		
+				}
+			
+			}
+		} else {
+			//backtracking
+			
+			//check if prevIndex is left child. if so, push right, bt=false
+			//else, prevI = i, pop, continue
+			
+			if ((heap + index)->left == prevIndex) {
+				
+				if (stackSize <= ptr - 1) { 
 					stackSize *= 2;
 					combStack = realloc(combStack, stackSize * sizeof(int));
-				}
+				} 
 				
-				ptr += 2;
-				*(combStack + ptr - 1) = (heap+index)->right;
-				*(combStack + ptr) = (heap + index)->left;
-			} else if (ptr >= depth && (heap + index)->left != -1) {
-				*notFinished = true;
+				
+				ptr++;
+				*(combStack + ptr) = (heap + index)->right;
+				backtracking = false;
+				
+			} else {
+				ptr--;
+				prevIndex = index;
 			}
+			
 		}
+		
 		
 	}
 	return result;
-	
-	
 }
+
 
 void logHeap() {
 	
