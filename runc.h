@@ -9,12 +9,8 @@ typedef struct HeapComb {
 	char* val;
 	int left;
 	int right;
+	int refs;
 } HeapComb;
-
-typedef struct CombStack {
-	int index;
-	struct CombStack* next;
-} CombStack;
 
 void strToTree(Comb** left, Comb** right, char** val, int* refs, char* str);
 char* splitCombStr(char *str);
@@ -34,6 +30,8 @@ void initHeap();
 void buildHeap(Comb* comb, int index);
 void printHeap();
 void checkReallocHeap();
-void editFrame(HeapComb* i, char* val, int left, int right);
+void editFrame(HeapComb* i, char* val, int left, int right, int refs);
 void heapToTree(int index);
 void logHeap();
+
+void decrementRefs(int index);

@@ -6,7 +6,12 @@
 #include "runc.h"
 
 
-bool logComb = false;
+/*
+TODO: better memory management:
+	- implement ref counts
+	- claim free parts of the tree?
+
+*/
 
 HeapComb* heap = NULL;
 int heapLength = 0;
@@ -42,15 +47,15 @@ void main() {
 	
 	fflush(stdout);
 	
-	// printf("\n\nbuilding heap:\n");
+	printf("\n\nbuilding heap:\n");
 	initHeap();
 	buildHeap(root, 0);
-	// printHeap();
+	printHeap();
 	
 	//reduceK(2);
 	printf("\nrun:\n");
 	runComb();
-	//printHeap();
+	printHeap();
 	printf("\n");
 	heapToTree(0);
 	
@@ -156,7 +161,7 @@ void buildHeap(Comb* comb, int index) {
 	
 	HeapComb* ptr = heap + index;
 	//printf("heap: %d\nptr: %d\n", heap, ptr);
-	
+	ptr->refs = 1;
 	if (comb->left == NULL && comb->right == NULL) {
 		//printf("building %s\n", comb->val); fflush(stdout);
 		ptr->val = comb->val;
@@ -175,6 +180,7 @@ void buildHeap(Comb* comb, int index) {
 		buildHeap(comb->right, (heap + index)->right); //because heapLength might have changed now
 		
 	}
+	
 	//printf("****\n");
 	
 }
@@ -208,9 +214,9 @@ void printHeap() {
 	for (i = 0; i < heapLength; i++) {
 
 		if (h->val == NULL) {
-			printf("\n%d: (+, %d, %d)", i, h->left, h->right); fflush(stdout);
+			printf("\n%d: (+, %d, %d, %d)", i, h->left, h->right, h->refs); fflush(stdout);
 		} else {
-			printf("\n%d: (%s, %d, %d)", i, h->val, h->left, h->right); fflush(stdout);
+			printf("\n%d: (%s, %d, %d, %d)", i, h->val, h->left, h->right, h->refs); fflush(stdout);
 		}
 		
 		//printf("\naddresses: h: %d, val: %d, left: %d, right: %d\n", h, &(h->val), &(h->left), &(h->right));
@@ -222,7 +228,6 @@ void printHeap() {
 
 // *************** run ***************
 
-//35985
 
 bool matchK(int index) { 
 	
@@ -250,35 +255,50 @@ bool matchS(int index) {
 }
 
 void reduceK(int index) {
+	
 	HeapComb* i = heap + index;
 	HeapComb* a = heap + (heap + i->left)->right;
-	editFrame(i, a->val, a->left, a->right);
+	
+	if (a->left != -1) { 
+		(heap + a->left)->refs += 1;
+		(heap + a->right)->refs += 1;
+	}
+	
+	decrementRefs(i->left);
+	decrementRefs(i->right);
+	editFrame(i, a->val, a->left, a->right, i->refs);
+	
 	
 	//logHeap();
 }
-
 
 void reduceS(int index) {
 	
 	checkReallocHeap();
 	
-	HeapComb* i = heap + index;
-	HeapComb* j = heap + i->left;
+	HeapComb* i = heap + index; //+++Sfgx
+	HeapComb* j = heap + i->left; //++Sfg
 	
 	heapLength += 2;
 	HeapComb* end = heap + heapLength;
 	
-	editFrame(end - 2, NULL, (heap + j->left)->right, i->right);
-	editFrame(end - 1, NULL, j->right, i->right);
-	editFrame(i, NULL, heapLength - 2, heapLength - 1);
+	(heap + (heap + j->left)->right)->refs += 1; //increment f 
+	(heap + j->right)->refs += 1; //increment g
+	(heap + i->right)->refs += 1; //increment x
+	decrementRefs(i->left);
 	
+	
+	editFrame(end - 2, NULL, (heap + j->left)->right, i->right, 1); //add +fx
+	editFrame(end - 1, NULL, j->right, i->right, 1); //add +gx
+	editFrame(i, NULL, heapLength - 2, heapLength - 1, i->refs); 
 	
 }
 
-void editFrame(HeapComb* i, char* val, int left, int right) {
+void editFrame(HeapComb* i, char* val, int left, int right, int refs) {
 	i->val = val;
 	i->left = left;
 	i->right = right;
+	i->refs = refs;
 }
 
 void heapToTree(int index) {
@@ -421,4 +441,15 @@ void logHeap() {
 	
 	fclose(fptr);
 	
+}
+
+
+void decrementRefs(int index) {
+	HeapComb* ptr = heap + index;
+	ptr->refs -=1;
+	
+	if (ptr->refs == 0 && ptr->left != -1) {
+		decrementRefs(ptr->left);
+		decrementRefs(ptr->right);
+	}
 }
