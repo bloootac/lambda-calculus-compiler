@@ -8,7 +8,7 @@
 
 /*
 TODO: better memory management:
-	- implement ref counts
+	- implement ref counts [DONE]
 	- claim free parts of the tree?
 
 */
@@ -338,7 +338,7 @@ void runComb() {
 }
 
 int findReductionDFS(int* indexPtr) {
-	int stackSize = 100;
+	int stackSize = 50;
 	int* combStack = (int*)malloc(stackSize * sizeof(int));
 	
 	int ptr = 0;
@@ -369,7 +369,7 @@ int findReductionDFS(int* indexPtr) {
 				
 				if (left != -1) {
 					
-					if (stackSize <= ptr - 1) { 
+					if (stackSize - 1 <= ptr) { 
 						stackSize *= 2;
 					    combStack = realloc(combStack, stackSize * sizeof(int));
 					} 
@@ -394,7 +394,7 @@ int findReductionDFS(int* indexPtr) {
 			
 			if ((heap + index)->left == prevIndex) {
 				
-				if (stackSize <= ptr - 1) { 
+				if (stackSize - 1 <= ptr) { 
 					stackSize *= 2;
 					combStack = realloc(combStack, stackSize * sizeof(int));
 				} 
@@ -444,12 +444,44 @@ void logHeap() {
 }
 
 
-void decrementRefs(int index) {
-	HeapComb* ptr = heap + index;
-	ptr->refs -=1;
+// void decrementRefs(int index) {
+	// //TODO: use a stack instead ?
 	
-	if (ptr->refs == 0 && ptr->left != -1) {
-		decrementRefs(ptr->left);
-		decrementRefs(ptr->right);
+	// HeapComb* ptr = heap + index;
+	// ptr->refs -=1;
+	
+	// if (ptr->refs == 0 && ptr->left != -1) {
+		// decrementRefs(ptr->left);
+		// decrementRefs(ptr->right);
+	// }
+// }
+
+void decrementRefs(int index) {
+	int stackSize = 10;
+	int* combStack = (int*)malloc(stackSize * sizeof(int));
+	int ptr = 0;
+	HeapComb* currentNode;
+	
+	*combStack = index;
+	
+	
+	while (ptr >= 0) {
+		currentNode = heap + *(combStack + ptr);
+		currentNode->refs -=1;
+		ptr--;
+		if (currentNode->refs == 0 && currentNode->left != -1) {
+			//TODO: safe realloc ? 
+			
+			if (stackSize - 2 <= ptr) {
+				stackSize *= 2;
+				combStack = (int*)realloc(combStack, stackSize * sizeof(int));
+			}
+			
+			ptr += 2;
+			*(combStack + ptr - 1) = currentNode->left;
+			*(combStack + ptr) = currentNode->right;
+			
+		}
 	}
+	
 }
