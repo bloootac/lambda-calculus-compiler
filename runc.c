@@ -7,15 +7,18 @@
 
 
 /*
-TODO: better memory management:
-	- implement ref counts [DONE]
-	- claim free parts of the tree?
-
+TODO: clean everything up + add comments
 */
 
 HeapComb* heap = NULL;
+int* freeNodes = NULL;
+int stackSize = 0;
+int stackPtr = -1;
 int heapLength = 0;
 int heapSize = 0;
+
+
+
 
 void main() {
     //try to open file
@@ -64,6 +67,7 @@ void main() {
 	
     free(input);
     free(heap);
+	free(freeNodes);
     exit(0); 
 }
 
@@ -152,6 +156,10 @@ void initHeap() {
 	heapSize = 200;
 	heap = (HeapComb*)malloc(heapSize * sizeof(HeapComb));
 	heapLength = 1;
+	
+	stackSize = 10;
+	freeNodes = (int*)malloc(stackSize * sizeof(HeapComb));
+	
 }
 
 void buildHeap(Comb* comb, int index) {
@@ -267,9 +275,7 @@ void reduceK(int index) {
 	decrementRefs(i->left);
 	decrementRefs(i->right);
 	editFrame(i, a->val, a->left, a->right, i->refs);
-	
-	
-	//logHeap();
+
 }
 
 void reduceS(int index) {
@@ -277,20 +283,25 @@ void reduceS(int index) {
 	checkReallocHeap();
 	
 	HeapComb* i = heap + index; //+++Sfgx
-	HeapComb* j = heap + i->left; //++Sfg
 	
-	heapLength += 2;
-	HeapComb* end = heap + heapLength;
+	int fIndex = (heap + (heap + i->left)->left)->right;
+	int gIndex = (heap + i->left)->right;
+	int xIndex = i->right;
 	
-	(heap + (heap + j->left)->right)->refs += 1; //increment f 
-	(heap + j->right)->refs += 1; //increment g
-	(heap + i->right)->refs += 1; //increment x
+	(heap + fIndex)->refs += 1;
+	(heap + gIndex)->refs += 1;
+	(heap + xIndex)->refs += 1;
+	
 	decrementRefs(i->left);
 	
+	int leftLocation = findMemory();
+	editFrame(heap + leftLocation, NULL, fIndex, xIndex, 1);
+	int rightLocation = findMemory();
+	editFrame(heap + rightLocation, NULL, gIndex, xIndex, 1);
+	editFrame(i, NULL, leftLocation, rightLocation, i->refs);
 	
-	editFrame(end - 2, NULL, (heap + j->left)->right, i->right, 1); //add +fx
-	editFrame(end - 1, NULL, j->right, i->right, 1); //add +gx
-	editFrame(i, NULL, heapLength - 2, heapLength - 1, i->refs); 
+	
+	
 	
 }
 
@@ -319,9 +330,7 @@ void runComb() {
 	while (reductionFound) {
 		reductionFound = false;
 		
-		//findReduction returns 0 if none, 1 if K, 2 if S. changes pointer to the location
 		char c = findReductionDFS(indexPtr);
-		
 		switch (c) {
 			case 1:
 				reductionFound = true;
@@ -355,6 +364,7 @@ int findReductionDFS(int* indexPtr) {
 		//not popping yet
 		
 		if (!backtracking) {
+			//printf("checking index %d\n", index); fflush(stdout);
 			if (matchK(index)) {
 				*indexPtr = index;
 				free(combStack);
@@ -413,6 +423,7 @@ int findReductionDFS(int* indexPtr) {
 		
 		
 	}
+	free(combStack);
 	return result;
 }
 
@@ -428,9 +439,9 @@ void logHeap() {
 	for (i = 0; i < heapLength; i++) {
 
 		if (h->val == NULL) {
-			fprintf(fptr, "\n%d: (+, %d, %d)", i, h->left, h->right); fflush(fptr);
+			fprintf(fptr, "\n%d: (+, %d, %d, %d)", i, h->left, h->right, h->refs); fflush(fptr);
 		} else {
-			fprintf(fptr, "\n%d: (%s, %d, %d)", i, h->val, h->left, h->right); fflush(fptr);
+			fprintf(fptr, "\n%d: (%s, %d, %d, %d)", i, h->val, h->left, h->right, h->refs); fflush(fptr);
 		}
 		
 		//printf("\naddresses: h: %d, val: %d, left: %d, right: %d\n", h, &(h->val), &(h->left), &(h->right));
@@ -443,19 +454,6 @@ void logHeap() {
 	
 }
 
-
-// void decrementRefs(int index) {
-	// //TODO: use a stack instead ?
-	
-	// HeapComb* ptr = heap + index;
-	// ptr->refs -=1;
-	
-	// if (ptr->refs == 0 && ptr->left != -1) {
-		// decrementRefs(ptr->left);
-		// decrementRefs(ptr->right);
-	// }
-// }
-
 void decrementRefs(int index) {
 	int stackSize = 10;
 	int* combStack = (int*)malloc(stackSize * sizeof(int));
@@ -464,24 +462,76 @@ void decrementRefs(int index) {
 	
 	*combStack = index;
 	
-	
 	while (ptr >= 0) {
+		//printf("decrementing ref for %d\n", *(combStack + ptr)); fflush(stdout);
 		currentNode = heap + *(combStack + ptr);
 		currentNode->refs -=1;
 		ptr--;
-		if (currentNode->refs == 0 && currentNode->left != -1) {
-			//TODO: safe realloc ? 
+
+		
+		if (currentNode->refs == 0) {
+			insertFreeNode(*(combStack + ptr + 1));
 			
-			if (stackSize - 2 <= ptr) {
-				stackSize *= 2;
-				combStack = (int*)realloc(combStack, stackSize * sizeof(int));
+			if (currentNode->left != -1) {
+				
+				if (stackSize - 2 <= ptr) {
+					stackSize *= 2;
+					combStack = (int*)realloc(combStack, stackSize * sizeof(int));
+				}
+			
+				ptr += 2;
+				*(combStack + ptr - 1) = currentNode->left;
+				*(combStack + ptr) = currentNode->right;
 			}
 			
-			ptr += 2;
-			*(combStack + ptr - 1) = currentNode->left;
-			*(combStack + ptr) = currentNode->right;
 			
 		}
+		
+	}
+	free(combStack);
+	//printf("fin decr refs. stackPtr = %d\n", stackPtr); fflush(stdout);
+	
+}
+
+void insertFreeNode(int index) {
+	//realloc if needed
+	
+	if (stackSize - 2 <= stackPtr) {
+		//printf("reallocating memory for freeNodes to %d\n", stackSize * 2); fflush(stdout);
+		stackSize *= 2;
+		freeNodes = (int*)realloc(freeNodes, stackSize * sizeof(int));
+	}
+	stackPtr++;
+	
+	*(freeNodes + stackPtr) = index;
+	//printf("freeing %d. stackPtr = %d\n", *(freeNodes + stackPtr), stackPtr); fflush(stdout);
+	
+	
+}
+
+int findMemory() {
+	//heapLength += 1;
+	if (stackPtr == -1) {
+		//realloc 
+		checkReallocHeap();
+		heapLength += 1;
+		//printf("added a node to the heap at %d\n", heapLength - 1); fflush(stdout);
+		return heapLength - 1;
+		
+		
+	} else {
+		//remove from stack
+		//printf("overwriting location %d\n", *(freeNodes + stackPtr) ); fflush(stdout);
+		stackPtr--;
+		return *(freeNodes + stackPtr + 1);
+		
+	}
+}
+
+void printFreeNodes() {
+	printf("free memory stack:\n");
+	for (int i = 0; i <= stackPtr; i++) {
+		printf("%d: %d\n", i, *(freeNodes + i)); fflush(stdout);
 	}
 	
 }

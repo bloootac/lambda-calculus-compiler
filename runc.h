@@ -35,3 +35,7 @@ void heapToTree(int index);
 void logHeap();
 
 void decrementRefs(int index);
+void insertFreeNode(int index);
+int findMemory();
+
+void printFreeNodes();
