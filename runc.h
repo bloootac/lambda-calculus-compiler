@@ -11,6 +11,8 @@ typedef struct HeapComb {
 	int refs;
 } HeapComb;
 
+void runFile(char* input);
+void readFile(FILE* fptr, char* input);
 
 void strToTree(Comb** left, Comb** right, char** val, char* str);
 char* splitCombStr(char *str);

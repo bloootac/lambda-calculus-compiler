@@ -8,51 +8,78 @@
 HeapComb* heap = NULL;
 int* freeNodes = NULL;
 int stackSize = 0;
-int stackPtr = -1;
+int stackPtr = 0;
 int heapLength = 0;
 int heapSize = 0;
 
 void main() {
-	
-    //copy file contents into input array
+    //retrieve .sk file
     const char* filename = "program.sk";
     FILE *fptr = fopen(filename, "r");
     if (!fptr) exit(1); //0 = failure, 1 = success
 	
+	//get file size
     struct stat sb;
     if (stat(filename, &sb) == -1) exit(0);
-	
     char* input = malloc(sb.st_size + 1);
-    fread(input, sb.st_size, 1, fptr);
-    input[sb.st_size] = '\0';
+	
+	//copy file contents
+	readFile(fptr, input);
     fclose(fptr);
+	
+	//run the file
     printf("input:\n%s\n", input);
+	runFile(input);
 	
-	//create Comb tree from input...
-	Comb* root = malloc(sizeof(Comb));
-	printf("tree:\n");
-	strToTree(&(root->left), &(root->right), &(root->val), input);
+	//finish
 	free(input);
-	
-	printTree(root);
-	fflush(stdout);
-	
-	//..and build heap from tree
-	initHeap();
-	buildHeap(root, 0);
-	
-	//reduce term
-	printf("\nrun:\n");
-	runComb();
-	printHeapTree(0);
-
-	//de-allocate everything
-	freeCombTree(root);
-    free(heap);
-	free(freeNodes);
     exit(0); 
 }
 
+//copy file contents into input array
+void readFile(FILE* fptr, char* input) {
+	int i = 0;
+	int c;
+	while ((c = fgetc(fptr)) != EOF) {
+		*(input + i) = c;
+		i++;
+	}
+	*(input + i) == '\0';
+}
+
+//run all lines in a file
+void runFile(char* input) {
+	char* line = input;
+	while (line) {
+		
+		//create Comb tree from input...
+		Comb* root = malloc(sizeof(Comb));
+		printf("\n\ntree:\n");
+		strToTree(&(root->left), &(root->right), &(root->val), line);
+		
+		printTree(root);
+		fflush(stdout);
+		
+		//..and build heap from tree
+		initHeap();
+		buildHeap(root, 0);
+		
+		//reduce term
+		printf("\nrun:\n");
+		runComb();
+		printHeapTree(0);
+
+		//de-allocate everything
+		freeCombTree(root);
+		free(heap);
+		free(freeNodes);
+		
+		//move on to next line of input
+		line = strchr(line, '\n');
+		if (line) line += 1;
+		
+	}
+}
 
 // *************** Comb tree ***************
 
@@ -153,6 +180,7 @@ void initHeap() {
 	
 	stackSize = 10;
 	freeNodes = (int*)malloc(stackSize * sizeof(HeapComb));
+	stackPtr = -1;
 }
 
 //build heap from Comb tree
@@ -301,7 +329,7 @@ void printHeapTree(int index) {
 
 // *************** reductions ***************
 
-//perform reductions on Comb term until none left
+//perform reductions on a Comb term until none left
 void runComb() {	
 	
 	bool reductionFound = true;
