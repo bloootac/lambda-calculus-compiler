@@ -81,6 +81,8 @@ void runFile(char* input) {
 	}
 }
 
+
+
 // *************** Comb tree ***************
 
 //input: addresses of a tree's left, right, and val pointers, and a pointer to a tree string. build Comb tree from input
@@ -168,6 +170,7 @@ void freeCombTree(Comb* ptr) {
 	}
 	free(ptr);
 }
+
 
 
 // *************** heap ***************
@@ -325,6 +328,7 @@ void printHeapTree(int index) {
 		printf("%s", i->val);
 	}
 }
+
 
 
 // *************** reductions ***************
@@ -505,6 +509,7 @@ int findReductionDFS(int* indexPtr) {
 	free(combStack);
 	return result;
 }
+
 
 
 // *************** debugging ***************
