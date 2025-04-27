@@ -15,10 +15,8 @@ more optimisations:
  - add combinators
  - maybe look into subOne later
 
-binary encoding: S = 01, K = 00, App = 1
- - write result to file
- - write stack func in C
-
+C runtime:
+ - move over to C...
 -}
 
 -- ******************** Program -> Lambda ********************
@@ -118,3 +116,16 @@ run_f_comp_paths = run_file (log_comp_search . conv_single)
 run_f_find_path :: IO()
 run_f_find_path = run_file (putStrLn . show . run_comb . snd . (\x -> x !! 0) . all_comp_lengths' . conv_single)
 
+
+-- ******************** write .sk file ********************
+
+encode :: Comb -> String
+encode K = "K"
+encode S = "S"
+encode (V s) = "(" ++ s ++ ")"
+encode (App x y) = "+" ++ (encode x) ++ (encode y)
+
+write_sk = do
+  program <- readFile "program.txt"
+  let sk = (unlines . map encode . conv) program
+  writeFile "program.sk" (take (length sk - 1) sk ++ ['\0'])
