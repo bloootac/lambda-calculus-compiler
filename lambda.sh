@@ -5,7 +5,6 @@
 TODO:
 
 commands to finish:
-	- interpret
 	- compile
 	- run
 
@@ -19,12 +18,17 @@ after the command line tool is done
 '
 
 fileExists() {
-	if [ -f "$1" ]; then
+	
+	if [ -z "$1" ]; then
+		printf "Error: source file not specified.\n"
+		return 1
+	elif [ -f "$1" ]; then
 		return 0
 	else 
 		printf "Error: ${1} could not be found.\n"
 		return 1
 	fi
+	
 }
 
 fileGiven() {
@@ -49,7 +53,7 @@ runCommand() {
 		
 		if fileExists "$2" && fileGiven "$3"; then
 			./conv "$2" "$3"
-			printf "%s successfully compiled into %s." "$2" "$3"
+			printf "%s successfully compiled to %s." "$2" "$3"
 		fi
 		
 		
