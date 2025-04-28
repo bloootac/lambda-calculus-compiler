@@ -46,9 +46,12 @@ runCommand() {
 		printf "quit                                        exit command line tool\n"
 		
 	elif [ "$1" = "interpret" ]; then
-		printf "i think you're trying to interpret ${2} into ${3}\n"
-		fileExists "$2"
-		fileGiven "$3"
+		
+		if fileExists "$2" && fileGiven "$3"; then
+			./conv "$2" "$3"
+			printf "%s successfully compiled into %s." "$2" "$3"
+		fi
+		
 		
 		
 	elif [ "$1" = "compile" ]; then
@@ -64,9 +67,6 @@ runCommand() {
 	else
 		printf "Command not recognised. Try running 'help' to see a list of commands.\n"
 	fi
-
-
-	
 
 }
 
