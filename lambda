@@ -4,8 +4,11 @@
 : '
 TODO:
 
+give error message when commands fail?
+
 commands to finish:
 	- compile
+		- make sure temp.h does not already exist
 	- run
 
 after the command line tool is done
@@ -59,9 +62,19 @@ runCommand() {
 		
 		
 	elif [ "$1" = "compile" ]; then
-		printf "i think you're trying to compile ${2} into ${3}\n"
-		fileExists "$2"
-		fileGiven "$3"
+		if fileExists "$2" && fileGiven "$3"; then
+		
+			#create .sk file
+			./conv "$2" temp.sk
+			#create C header file containing the .sk file's data
+			xxd -i temp.sk > temp.h
+			#compile runc, which is linked to temp.h
+			gcc -g runc.c -o "$3"
+			#remove unnecessary files
+			rm temp.sk
+			rm temp.h
+			printf "%s successfully compiled to %s." "$2" "$3"
+		fi
 		
 	elif [ "$1" = "run" ]; then 
 		printf "i think you're trying to run ${2}\n"
