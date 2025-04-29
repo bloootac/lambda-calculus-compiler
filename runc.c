@@ -35,7 +35,7 @@ void main(int argc, char *argv[]) {
 	char* input = temp_sk;
 	
 	//run the file
-    printf("input:\n%s\n", input);
+    //printf("input:\n%s\n", input);
 	runFile(input);
 	
 	//finish
@@ -61,18 +61,18 @@ void runFile(char* input) {
 		
 		//create Comb tree from input...
 		Comb* root = malloc(sizeof(Comb));
-		printf("\n\ntree:\n");
 		strToTree(&(root->left), &(root->right), &(root->val), line);
 		
-		printTree(root);
-		fflush(stdout);
+		//printf("\n\ntree:\n");
+		//printTree(root);
+		//fflush(stdout);
 		
 		//..and build heap from tree
 		initHeap();
 		buildHeap(root, 0);
 		
 		//reduce term
-		printf("\nrun:\n");
+		//printf("\nrun:\n");
 		runComb();
 		printHeapTree(0);
 
@@ -84,6 +84,7 @@ void runFile(char* input) {
 		//move on to next line of input
 		line = strchr(line, '\n');
 		if (line) line += 1;
+		printf("\n");
 		
 	}
 }
