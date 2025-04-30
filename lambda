@@ -40,11 +40,11 @@ fileGiven() {
 
 compile() {
 	#create .sk file
-	./conv "$1" temp.sk
+	./conv "$1" temp.sk || exit 1
 	#create C header file containing the .sk file's data in an array
-	xxd -i temp.sk > temp.h
+	xxd -i temp.sk > temp.h || exit 1
 	#compile runc, which is linked to temp.h
-	gcc -g runc.c -o "$2"
+	gcc -g runc.c -o "$2" || exit 1
 	#remove unecessary files
 	rm temp.sk
 	rm temp.h
@@ -61,15 +61,24 @@ runCommand() {
 		printf "quit                                        exit command line tool\n"
 		
 	elif [ "$1" = "build" ]; then
-		alex lexer.x
-		happy parser.y
-		ghc -no-keep-hi-files -no-keep-o-files -main-is Conv conv.hs
+		alex lexer.x && happy parser.y && ghc -no-keep-hi-files -no-keep-o-files -main-is Conv conv.hs
+		
+		if [ $? -eq 0 ]; then 
+			printf "Build command succeeded."
+		else 
+			printf "Build command failed. Please check that you have alex, happy, and ghc."
+		fi
 		
 	elif [ "$1" = "interpret" ]; then
 		
 		if fileExists "$2" && fileGiven "$3"; then
 			./conv "$2" "$3"
-			printf "%s successfully compiled to %s" "$2" "$3"
+			
+			if [ $? -eq 0 ]; then
+				printf "%s successfully compiled to %s" "$2" "$3"
+			else
+				printf "Compilation failed."
+			fi
 		fi
 		
 		
@@ -77,14 +86,26 @@ runCommand() {
 	elif [ "$1" = "compile" ]; then
 		if fileExists "$2" && fileGiven "$3"; then
 			compile "$2" "$3"
-			printf "%s successfully compiled to %s" "$2" "$3"
+			
+			if [ $? -eq 0 ]; then
+				printf "%s successfully compiled to %s" "$2" "$3"
+			else
+				printf "Compilation failed."
+			fi
 		fi
 		
 	elif [ "$1" = "run" ]; then 
 		if fileExists "$2"; then
-			compile "$2" temp.exe
-			./temp.exe
-			rm temp.exe
+			compile "$2" temp.exe	
+				
+			if [ $? -eq 0 ]; then
+				printf "Compilation successful. Running program...\n"
+				./temp.exe
+				rm temp.exe
+			else
+				printf "Compilation failed."
+			fi
+			
 		fi
 		
 		
@@ -96,7 +117,7 @@ runCommand() {
 
 mainLoop() {
 	if [ -z "$1" ]; then
-		printf "Welcome to the lambda compiler command line tool!\nTry running 'help' to see a list of commands.\n"
+		printf "Welcome to the lambda compiler command line tool!\nTry running 'help' to see a list of commands. Please run the 'build' command before first use.\n"
 		while true; do
 			printf ">>> "
 			read -r command source target
