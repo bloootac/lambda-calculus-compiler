@@ -4,12 +4,7 @@
 : '
 TODO:
 
-give error message when commands fail?
-
-commands to finish:
-	- compile
-		- make sure temp.h does not already exist
-	- run
+add error handling
 
 after the command line tool is done
 	- add I/O combinators
@@ -59,10 +54,16 @@ runCommand() {
 
 	if [ "$1" = "help" ]; then 
 		printf "help                                        list all commands\n"
+		printf "build                                       generate the lexer, parser, and compiler\n"
 		printf "interpret [sourceFile] [targetFile]         store the combinatory representation of [sourceFile] at [targetFile]\n"
 		printf "compile [sourceFile] [targetFile]           compile [sourceFile] into an executable program stored at [targetFile]\n"
 		printf "run [fileName]                              compile [sourceFile] and run the program\n"
 		printf "quit                                        exit command line tool\n"
+		
+	elif [ "$1" = "build" ]; then
+		alex lexer.x
+		happy parser.y
+		ghc -no-keep-hi-files -no-keep-o-files -main-is Conv conv.hs
 		
 	elif [ "$1" = "interpret" ]; then
 		
