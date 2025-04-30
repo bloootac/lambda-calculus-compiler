@@ -21,33 +21,35 @@ import Prelude hiding (EQ)
       NEWLINE         { NEWLINE  }
       RUN             { RUN      }
 	  
-%left ID INT LAMBDA '(' ')' NEWLINE 
+%left ID INT LAMBDA '(' ')' NEWLINE TRUE FALSE
 %nonassoc APPLY
 %%
 
 	  
-program     : line                                       { [$1]         }
-            | inner_line program                         { $1 : $2      }
+program     : line                                       { [$1]                                 }
+            | inner_line program                         { $1 : $2                              }
 	  
-line        : ID '=' lambda_term                         { Assign $1 $3 }
-            | RUN lambda_term                            { RunTerm $2   }
-            | line NEWLINE                               { $1           }
+line        : ID '=' lambda_term                         { Assign $1 $3                         }
+            | RUN lambda_term                            { RunTerm $2                           }
+            | line NEWLINE                               { $1                                   }
 	  
-inner_line  : line NEWLINE                               { $1           }
+inner_line  : line NEWLINE                               { $1                                   }
 	  
-lambda_term : var                                        { Variable $1  }
-            | LAMBDA args DOT lambda_term                { Func $2 $4   }
-            | lambda_term lambda_term %prec APPLY        { Apply $1 $2  }
-            | '(' lambda_term ')'                        { $2           }
+lambda_term : var                                        { Variable $1                          }
+			| TRUE                                       { Func ["a", "b"] (Variable (Str "a")) }
+			| FALSE                                      { Func ["a", "b"] (Variable (Str "b")) }
+            | LAMBDA args DOT lambda_term                { Func $2 $4                           }
+            | lambda_term lambda_term %prec APPLY        { Apply $1 $2                          }
+            | '(' lambda_term ')'                        { $2                                   }
 
-args        : ID                                         { [$1]         }
-            | ID args                                    { $1 : $2      }
+args        : ID                                         { [$1]                                 }
+            | ID args                                    { $1 : $2                              }
 
-var         : ID                                         { Str $1       }
-            | INT                                        { Num $1       }
+var         : ID                                         { Str $1                               }
+            | INT                                        { Num $1                               }
 
-var_list    : var                                        { [$1]         }
-            | var var_list                               { $1 : $2      }
+var_list    : var                                        { [$1]                                 }
+            | var var_list                               { $1 : $2                              }
 	  
 	  
 {
