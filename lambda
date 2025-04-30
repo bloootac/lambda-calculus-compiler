@@ -46,7 +46,7 @@ runCommand() {
 		printf "build                                       generate the lexer, parser, and compiler\n"
 		printf "interpret [sourceFile] [targetFile]         store the combinatory representation of [sourceFile] at [targetFile]\n"
 		printf "compile [sourceFile] [targetFile]           compile [sourceFile] into an executable program stored at [targetFile]\n"
-		printf "run [fileName]                              compile [sourceFile] and run the program\n"
+		printf "run [sourceFile]                            compile [sourceFile] and run the program\n"
 		printf "quit                                        exit command line tool\n"
 		
 	elif [ "$1" = "build" ]; then
