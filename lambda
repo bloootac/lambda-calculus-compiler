@@ -1,20 +1,6 @@
 #!/bin/bash
 
-
-: '
-TODO:
-
-add error handling
-
-after the command line tool is done
-	- add I/O combinators
-	- try out infinite loops
-	- try fib w/o Y combinator 
-	- check typability of terms in lambda or sk? mark them and only run if nothing else available
-
-
-'
-
+#check if the user has specified a file, and if it exists
 fileExists() {
 	
 	if [ -z "$1" ]; then
@@ -29,6 +15,7 @@ fileExists() {
 	
 }
 
+#check if the user has specified a file
 fileGiven() {
 	if [ -z "$1" ]; then
 		printf "Error: target file not specified.\n"
@@ -38,6 +25,7 @@ fileGiven() {
 	fi
 }	
 
+#create executable file from program
 compile() {
 	#create .sk file
 	./conv "$1" temp.sk || exit 1
@@ -50,6 +38,7 @@ compile() {
 	rm temp.h
 }
 
+#run a single command
 runCommand() {
 
 	if [ "$1" = "help" ]; then 
@@ -61,6 +50,7 @@ runCommand() {
 		printf "quit                                        exit command line tool\n"
 		
 	elif [ "$1" = "build" ]; then
+		#generate lexer, parser, and compiler
 		alex lexer.x && happy parser.y && ghc -no-keep-hi-files -no-keep-o-files -main-is Conv conv.hs
 		
 		if [ $? -eq 0 ]; then 
@@ -70,6 +60,7 @@ runCommand() {
 		fi
 		
 	elif [ "$1" = "interpret" ]; then
+		#create SK file from input
 		
 		if fileExists "$2" && fileGiven "$3"; then
 			./conv "$2" "$3"
@@ -84,6 +75,8 @@ runCommand() {
 		
 		
 	elif [ "$1" = "compile" ]; then
+		#create executable file from input
+		
 		if fileExists "$2" && fileGiven "$3"; then
 			compile "$2" "$3"
 			
@@ -95,6 +88,8 @@ runCommand() {
 		fi
 		
 	elif [ "$1" = "run" ]; then 
+		#create executable file from input, run it, and delete it
+		
 		if fileExists "$2"; then
 			compile "$2" temp.exe	
 				
@@ -115,8 +110,11 @@ runCommand() {
 
 }
 
+#main script loop
 mainLoop() {
 	if [ -z "$1" ]; then
+		#if the user hasn't specified a command when calling lambda, enter the command line tool
+		
 		printf "Welcome to the lambda compiler command line tool!\nTry running 'help' to see a list of commands. Please run the 'build' command before first use.\n"
 		while true; do
 			printf ">>> "
@@ -129,7 +127,9 @@ mainLoop() {
 			runCommand "$command" "$source" "$target"
 			printf "\n"
 		done
+		
 	else 
+		#otherwise, only run the command the user has specified
 		runCommand "$1" "$2" "$3"
 	fi
 		
