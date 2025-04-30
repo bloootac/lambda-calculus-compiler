@@ -32,6 +32,7 @@ program     : line                                       { [$1]                 
 line        : ID '=' lambda_term                         { Assign $1 $3                         }
             | RUN lambda_term                            { RunTerm $2                           }
             | line NEWLINE                               { $1                                   }
+			| NEWLINE line                               { $2                                   }
 	  
 inner_line  : line NEWLINE                               { $1                                   }
 	  
