@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include "temp.h"
 #include "runc.h"
 
 HeapComb* heap = NULL;
@@ -12,27 +13,33 @@ int stackPtr = 0;
 int heapLength = 0;
 int heapSize = 0;
 
-void main() {
-    //retrieve .sk file
-    const char* filename = "program.sk";
-    FILE *fptr = fopen(filename, "r");
-    if (!fptr) exit(1); //0 = failure, 1 = success
+
+void main(int argc, char *argv[]) {
+    
+	//old version:
+    // const char* filename = "program.sk";
+    // FILE *fptr = fopen(filename, "r");
+    // if (!fptr) exit(1); //0 = failure, 1 = success
 	
-	//get file size
-    struct stat sb;
-    if (stat(filename, &sb) == -1) exit(0);
-    char* input = malloc(sb.st_size + 1);
+	// //get file size
+    // struct stat sb;
+    // if (stat(filename, &sb) == -1) exit(0);
+    // char* input = malloc(sb.st_size + 1);
 	
-	//copy file contents
-	readFile(fptr, input);
-    fclose(fptr);
+	// //copy file contents
+	// readFile(fptr, input);
+    // fclose(fptr);
+	
+	//temp_sk is declared in temp.h, which is made just before compiling this runtime
+	//it contains the contents of the .sk file
+	char* input = temp_sk;
 	
 	//run the file
-    printf("input:\n%s\n", input);
+    //printf("input:\n%s\n", input);
 	runFile(input);
 	
 	//finish
-	free(input);
+	//free(input);
     exit(0); 
 }
 
@@ -54,18 +61,18 @@ void runFile(char* input) {
 		
 		//create Comb tree from input...
 		Comb* root = malloc(sizeof(Comb));
-		printf("\n\ntree:\n");
 		strToTree(&(root->left), &(root->right), &(root->val), line);
 		
-		printTree(root);
-		fflush(stdout);
+		//printf("\n\ntree:\n");
+		//printTree(root);
+		//fflush(stdout);
 		
 		//..and build heap from tree
 		initHeap();
 		buildHeap(root, 0);
 		
 		//reduce term
-		printf("\nrun:\n");
+		//printf("\nrun:\n");
 		runComb();
 		printHeapTree(0);
 
@@ -77,6 +84,7 @@ void runFile(char* input) {
 		//move on to next line of input
 		line = strchr(line, '\n');
 		if (line) line += 1;
+		printf("\n");
 		
 	}
 }

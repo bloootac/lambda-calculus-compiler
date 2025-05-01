@@ -7,6 +7,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Monad
 import System.IO
+import System.Environment
 
 {-
 TODO: 
@@ -15,8 +16,6 @@ more optimisations:
  - add combinators
  - maybe look into subOne later
 
-C runtime:
- - move over to C...
 -}
 
 -- ******************** Program -> Lambda ********************
@@ -125,7 +124,15 @@ encode S = "S"
 encode (V s) = "(" ++ s ++ ")"
 encode (App x y) = "+" ++ (encode x) ++ (encode y)
 
-write_sk = do
-  program <- readFile "program.txt"
+write_sk sourceFile targetFile = do
+  program <- readFile sourceFile
   let sk = (unlines . map encode . conv) program
-  writeFile "program.sk" (take (length sk - 1) sk ++ ['\0'])
+  writeFile targetFile (take (length sk - 1) sk ++ ['\0'])
+
+main :: IO ()
+main = do
+	-- args: name of source file and target file
+	-- convert source file to a Comb representation, store at target file
+	args <- getArgs
+	if (length args /= 2) then error "Error: invalid arguments given to conv.exe"
+	else write_sk (args !! 0) (args !! 1)

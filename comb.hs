@@ -15,7 +15,7 @@ instance Show Comb where
   show (V s) = s
   -- show (App x y) = let sx = show x; sy = show y
                        -- wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
-				   -- in wrap sx ++ wrap sy
+                       -- in wrap sx ++ wrap sy
   show (App x y) =
     case is_num (App x y) of (Just n) -> show n 
                              Nothing  -> let sx = show x; sy = show y
@@ -30,14 +30,13 @@ instance Show (Run Comb) where
   show (Run x) = show x
   
 instance Applicative Run where
-  pure = return
+  pure = Run
   (<*>) (Run f) (Run x) = Run (f x)
   
 instance Functor Run where
   fmap f (Run x) = Run (f x)
 
 instance Monad Run where
-  return a      = Run a
   (Run a) >>= f = f a
 
 
@@ -47,7 +46,7 @@ data Annotated a = Log [String] a
 deriving instance Show a => Show (Annotated a)
 
 instance Applicative Annotated where
-  pure = return
+  pure x = Log [] x
   (<*>) = ap
 
 instance Functor Annotated where
@@ -55,7 +54,7 @@ instance Functor Annotated where
   
 instance Monad Annotated where
   --return :: Show a => a -> Annotated a
-  return x = Log [] x 
+  --return x = Log [] x 
   (Log a x) >>= f = let (Log b y) = f x in Log (a ++ b) y
 
 
