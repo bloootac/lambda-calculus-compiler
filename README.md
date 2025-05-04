@@ -43,15 +43,15 @@ The identifier can contain any mixture of letters, digits, and the `_` and `'` s
 
 An identifier can be re-used several times in a program; when referenced in other statements, its most recent definition will be used. So the output of this program
 ```
-t = \a b. a
-run t f x
-t = \a b. b
-run t f x
+t = a
+run t
+t = b 
+run t
 ```
 will be
 ```
-(f)
-(x)
+(a)
+(b)
 ```
 
 #### Lambda terms
