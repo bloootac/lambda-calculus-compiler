@@ -32,8 +32,10 @@ int findMemory();
 void runComb();
 bool matchK(int index);
 bool matchS(int index);
+bool matchI(int index);
 void reduceK(int index);
 void reduceS(int index);
+void reduceI(int index);
 int findReductionDFS(int* indexPtr);
 void printHeapTree(int index);
 

@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -126,7 +127,7 @@ void strToTree(Comb** left, Comb** right, char** val, char* str) {
 		*val = malloc(splitIndex - str + 1); 
 		memcpy(*val, str, splitIndex - str);
 		*(*val + (splitIndex - str)) = '\0';
-		
+
 		//so we know this node is a leaf
 		*left = NULL; *right = NULL;
 		
@@ -140,7 +141,7 @@ char* splitCombStr(char *str) {
 
 	while (*str) {
 		if (*str == '+') count++;
-		else if (*str == ')' || *str == 'S' || *str == 'K') count--;
+		else if (*str == ')' || *str == 'S' || *str == 'K' || *str == 'I') count--;
 		str++;
 		if (count == 0) break;
 	}
@@ -363,6 +364,10 @@ void runComb() {
 				reductionFound = true;
 				reduceS(*indexPtr);
 				break;
+			case 3:
+				reductionFound = true;
+				reduceI(*indexPtr);
+				break;
 		}
 		
 	}
@@ -389,6 +394,12 @@ bool matchS(int index) {
 		}
 	}
 	return false;
+}
+
+//check if node is of the form +Ix
+bool matchI(int index) {
+	int i = (heap + index)->left;
+	return i != -1 && (heap + i)->val != NULL && !strcmp((heap + i)->val, "I");
 }
 
 //perform K- and S-reductions
@@ -437,6 +448,26 @@ void reduceS(int index) {
 
 }
 
+void reduceI(int index) {
+	//extract x from +Ix
+	HeapComb* i = heap + index;
+	HeapComb* x = heap + i->right;
+	
+	//increment the ref counts of x's children, since they'll be referenced by the new copy of x
+	if (x->left != -1) {
+		(heap + x->left)->refs += 1;
+		(heap + x->right)->refs += 1;
+	}
+	
+	//decrement ref counts of I and x
+	decrementRefs(i->left);
+	decrementRefs(i->right);
+	
+	//replace +Ix with x
+	editFrame(i, x->val, x->left, x->right, i->refs);
+	
+}
+
 //search for possible reductions starting from the root
 int findReductionDFS(int* indexPtr) {
 	
@@ -467,6 +498,10 @@ int findReductionDFS(int* indexPtr) {
 				*indexPtr = index;
 				free(combStack);
 				return 2;
+			} else if (matchI(index)) {
+				*indexPtr = index;
+				free(combStack);
+				return 3;
 			} else {
 				int left = (heap + index)->left;
 				
