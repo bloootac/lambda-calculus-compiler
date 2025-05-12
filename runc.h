@@ -29,6 +29,9 @@ void decrementRefs(int index);
 void insertFreeNode(int index);
 int findMemory();
 
+void initSearchStack();
+void checkReallocSearchStack();
+
 void runComb();
 bool matchK(int index);
 bool matchS(int index);
@@ -41,4 +44,5 @@ void printHeapTree(int index);
 
 void reallocFail(void* ptr);
 void printFreeNodes();
+void printSearchStack();
 void logHeap();

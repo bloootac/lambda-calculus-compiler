@@ -14,6 +14,25 @@ int stackPtr = 0;
 int heapLength = 0;
 int heapSize = 0;
 
+int searchStackSize = 0;
+int* searchStack = NULL;
+int searchPtr = 0;
+
+int tempCount = 0;
+
+/*
+TODO: const reduction lookup
+make search stack global
+
+	int stackSize = 50;
+	int* combStack = (int*)malloc(stackSize * sizeof(int));
+	int ptr = 0;
+	int result = 0;
+	int index;
+	int prevIndex;
+	bool backtracking = false;
+
+*/
 
 void main(int argc, char *argv[]) {
     
@@ -72,6 +91,8 @@ void runFile(char* input) {
 		initHeap();
 		buildHeap(root, 0);
 		
+		initSearchStack();
+		
 		//reduce term
 		//printf("\nrun:\n");
 		runComb();
@@ -81,6 +102,7 @@ void runFile(char* input) {
 		freeCombTree(root);
 		free(heap);
 		free(freeNodes);
+		free(searchStack);
 		
 		//move on to next line of input
 		line = strchr(line, '\n');
@@ -339,6 +361,22 @@ void printHeapTree(int index) {
 }
 
 
+void initSearchStack() {
+	searchStackSize = 50;
+	searchStack = (int*)malloc(stackSize * sizeof(int));
+	searchPtr = 0;
+	*searchStack = 0;
+}
+
+void checkReallocSearchStack() {
+	if (searchStackSize - 1 <= searchPtr) { 
+		searchStackSize *= 2;
+					    
+		int* tempPtr = (int*)realloc(searchStack, searchStackSize * sizeof(int));
+		if (!tempPtr) reallocFail(searchStack);
+		searchStack = tempPtr;
+	} 
+}
 
 // *************** reductions ***************
 
@@ -353,6 +391,12 @@ void runComb() {
 		//search for reduction from root
 		reductionFound = false;
 		char c = findReductionDFS(indexPtr);
+		
+		if (*indexPtr == 51192) {
+			tempCount++;
+			printf("\nreached index 51192. before simplification:\n"); fflush(stdout);
+			printHeap();
+		}
 		
 		//if a possible reduction is found, perform it
 		switch (c) {
@@ -370,21 +414,41 @@ void runComb() {
 				break;
 		}
 		
+		if (*indexPtr == 51192) {
+			printf("\nafter simplification:\n"); fflush(stdout);
+			printHeap(); fflush(stdout);
+		}
+		
 	}
 }
 
 //check if node is of the form ++Kab
 bool matchK(int index) { 
+
+	if (tempCount == 6 && index == 51196) {
+		printf("matching K\n"); fflush(stdout);
+	}
+
 	int i = (heap + index)->left;
 	if (i != -1 && (heap + i)->left != -1) {
 		char* str = (heap + (heap + i)->left)->val;
 		return str != NULL && !strcmp(str, "K");
 	}
+	
+	if (tempCount == 6 && index == 51196) {
+		printf("matched K\n"); fflush(stdout);
+	}
+	
 	return false;
 }
 
 //check if node is of the form +++Sfgx
 bool matchS(int index) {
+	
+	if (tempCount == 6 && index == 51196) {
+		printf("matching S\n"); fflush(stdout);
+	}
+	
 	int i = (heap + index)->left;
 	if (i != -1) {
 		int j = (heap + i)->left;
@@ -393,6 +457,11 @@ bool matchS(int index) {
 			return str != NULL && !strcmp(str, "S");
 		}
 	}
+	
+	if (tempCount == 6 && index == 51196) {
+		printf("matched S\n"); fflush(stdout);
+	}
+	
 	return false;
 }
 
@@ -473,55 +542,77 @@ int findReductionDFS(int* indexPtr) {
 	
 	//create search depth stack, which stores the ancestors of the node currently being searched
 	//(makes it easier to control search depth)
-	int stackSize = 50;
-	int* combStack = (int*)malloc(stackSize * sizeof(int));
-	int ptr = 0;
+	// int stackSize = 50;
+	// int* combStack = (int*)malloc(stackSize * sizeof(int));
+	// int ptr = 0;
 	int result = 0;
 	int index;
 	int prevIndex;
 	bool backtracking = false;
 	
 	//add root to stack
-	*combStack = 0;
+	//*combStack = 0;
 	
-	while (ptr != -1) {
-		index = *(combStack + ptr);
+	//this isn't working ...
+	printHeap();
+	printHeapTree(0); printf("\n");
+	printSearchStack();
+	
+	while (searchPtr != -1) {
+		index = *(searchStack + searchPtr);
+		
+		if (tempCount == 6) {
+			printf("looking at index %d\n", index); fflush(stdout);
+		}	
+		
+		printf("looking at index %d\n", index); fflush(stdout);
 		
 		if (!backtracking) {
 			
 			//look for reduction at ptr
 			if (matchK(index)) {
 				*indexPtr = index;
-				free(combStack);
+				searchPtr--;
+				//free(combStack);
 				return 1;
 			} else if (matchS(index)) {
 				*indexPtr = index;
-				free(combStack);
+				//free(combStack);
 				return 2;
 			} else if (matchI(index)) {
 				*indexPtr = index;
-				free(combStack);
+				//free(combStack);
 				return 3;
 			} else {
 				int left = (heap + index)->left;
 				
+				if (tempCount == 6 && index == 51196) {
+					printf("matchK and S successful here"); fflush(stdout);
+				}
+				
 				//if node has left child, realloc if necessary and add left child to stack
 				if (left != -1) {
 					
-					if (stackSize - 1 <= ptr) { 
-						stackSize *= 2;
+					// if (stackSize - 1 <= ptr) { 
+						// stackSize *= 2;
 					    
-						int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
-						if (!tempPtr) reallocFail(combStack);
-						combStack = tempPtr;
-					} 
+						// int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
+						// if (!tempPtr) reallocFail(combStack);
+						// combStack = tempPtr;
+					// } 
 					
-					ptr++;
-					*(combStack + ptr) = left;
+					checkReallocSearchStack();
+					
+					if (tempCount == 6 && index == 51196) {
+						printf("reached point 2"); fflush(stdout);
+					}
+					
+					searchPtr++;
+					*(searchStack + searchPtr) = left;
 				} else {
 					//start backtracking to find a node in the stack that has a child and continue the search
 					backtracking = true;
-					ptr--;
+					searchPtr--;
 					prevIndex = index;
 				}
 			}
@@ -530,26 +621,28 @@ int findReductionDFS(int* indexPtr) {
 			//backtracking - if the prev node we checked is the left child of this one, add its right child to the stack
 			if ((heap + index)->left == prevIndex) {
 				
-				if (stackSize - 1 <= ptr) { 
-					stackSize *= 2;
-					int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
-					if (!tempPtr) reallocFail(combStack);
-					combStack = tempPtr;
-				} 
+				// if (stackSize - 1 <= ptr) { 
+					// stackSize *= 2;
+					// int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
+					// if (!tempPtr) reallocFail(combStack);
+					// combStack = tempPtr;
+				// } 
 				
-				ptr++;
-				*(combStack + ptr) = (heap + index)->right;
+				checkReallocSearchStack();
+				
+				searchPtr++;
+				*(searchStack + searchPtr) = (heap + index)->right;
 				backtracking = false;
 				
 			} else {
 				//this node has no unsearched children - keep backtracking
-				ptr--;
+				searchPtr--;
 				prevIndex = index;
 			}
 		}
 	}
 	
-	free(combStack);
+	//free(combStack);
 	return result;
 }
 
@@ -564,6 +657,15 @@ void printFreeNodes() {
 		printf("%d: %d\n", i, *(freeNodes + i)); fflush(stdout);
 	}
 	
+}
+
+
+void printSearchStack() {
+	printf("searchPtr: %d\n", searchPtr);
+	printf("search stack:\n");
+	for (int i = 0; i <= searchPtr; i++) {
+		printf("%d: %d\n", i, *(searchStack + i)); fflush(stdout);
+	}
 }
 
 //write most recent heap to file
