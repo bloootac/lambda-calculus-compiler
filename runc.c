@@ -476,7 +476,7 @@ void reduceS(int index) {
 	editFrame(heap + rightLocation, NULL, gIndex, xIndex, 1);
 	
 	//replace +++Sfgx with ++fx+gx
-	editFrame(heap + index, NULL, leftLocation, rightLocation, i->refs);
+	editFrame(heap + index, NULL, leftLocation, rightLocation, (heap + index)->refs);
 
 
 }
