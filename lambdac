@@ -103,6 +103,22 @@ runCommand() {
 			
 		fi
 		
+	#TODO: remove this later!
+	
+	elif [ "$1" = "debug" ]; then
+	
+		if fileExists "$2"; then
+			compile "$2" temp.exe	
+				
+			if [ $? -eq 0 ]; then
+				printf "Compilation successful. Starting gdb...\n"
+				gdb ./temp.exe
+				rm temp.exe
+			else
+				printf "Compilation failed."
+			fi
+			
+		fi
 		
 	else
 		printf "Command not recognised. Try running 'help' to see a list of commands.\n"
