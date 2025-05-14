@@ -47,6 +47,7 @@ runCommand() {
 		printf "interpret [sourceFile] [targetFile]         store the combinatory representation of [sourceFile] at [targetFile]\n"
 		printf "compile [sourceFile] [targetFile]           compile [sourceFile] into an executable program stored at [targetFile]\n"
 		printf "run [sourceFile]                            compile [sourceFile] and run the program\n"
+		printf "debug [sourceFile]                          compile [sourceFile] and run it with GDB\n"
 		printf "quit                                        exit command line tool\n"
 		
 	elif [ "$1" = "build" ]; then
@@ -102,11 +103,10 @@ runCommand() {
 			fi
 			
 		fi
-		
-	#TODO: remove this later!
 	
 	elif [ "$1" = "debug" ]; then
-	
+		#create executable file from input, run it with gdb, and delete it
+		
 		if fileExists "$2"; then
 			compile "$2" temp.exe	
 				
