@@ -101,19 +101,31 @@ will be
 ### Example program
 This program outputs the first five Fibonacci numbers.
 ```
--- Fibonacci program
+tru = \a b.a
+fal = \a b.b
+isZero = \m. m (tru fal) tru
 
-isZero = \m. m (true false) true
+-- tuple stuff
+tup = \a b f.f a b
+fst = \t.t (\x y.x)
+snd = \t.t (\x y.y)
 
-tup = \a x b. b a x 
+-- subOne is unused in this program
+subOne = \n f x. (n (\t. tup 1 ((\x. (isZero (t tru)) x (f x)) (t fal))) (tup 0 x)) fal
 
-subOne = \n f x. (n (\t. tup 1 ((\x. (isZero (t true)) x (f x)) (t false))) (tup 0 x)) false
-
+-- arithmetic
 addOne = \m f x.f (m f x)
 add = \m n. m addOne n
 
+-- fixed point combinators
 Y = \f. (\x. f(x x))(\x. f(x x))
-fib = Y(\f i. isZero i 1 ((isZero (subOne i)) 1 (add (f (subOne i)) (f (2 subOne i)))))
+Z = \f. (\x. f(\v.x x v))(\x. f(\v.x x v))
+
+---- fibonacci function
+-- (fib k, fib k+1) -> (fib k+1, fib k+2)
+increment = \t.tup (snd t) (add (fst t) (snd t))
+-- i -> (fib i, fib i+1)
+fib = \i.fst(i increment (tup 1 1))
 
 run fib 0 f x
 run fib 1 f x
