@@ -20,7 +20,7 @@ char* getVar(char *str);
 void printTree(Comb *comb);
 void freeCombTree(Comb* ptr);
 
-void initHeap();
+void initStacks();
 void buildHeap(Comb* comb, int index);
 void printHeap();
 void checkReallocHeap();
@@ -28,15 +28,19 @@ void editFrame(HeapComb* i, char* val, int left, int right, int refs);
 void decrementRefs(int index);
 void insertFreeNode(int index);
 int findMemory();
+void printHeapTree(int index);
+void checkReallocSearchStack();
 
 void runComb();
 bool matchK(int index);
 bool matchS(int index);
+bool matchI(int index);
 void reduceK(int index);
 void reduceS(int index);
+void reduceI(int index);
 int findReductionDFS(int* indexPtr);
-void printHeapTree(int index);
 
 void reallocFail(void* ptr);
-void printFreeNodes();
+void printFreeStack();
+void printSearchStack();
 void logHeap();

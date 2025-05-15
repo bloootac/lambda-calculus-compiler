@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,17 +7,26 @@
 #include "temp.h"
 #include "runc.h"
 
+//heap of Comb terms
 HeapComb* heap = NULL;
-int* freeNodes = NULL;
-int stackSize = 0;
-int stackPtr = 0;
 int heapLength = 0;
 int heapSize = 0;
+
+//stack of reusable locations on the heap
+int* freeStack = NULL;
+int freeStackSize = 0;
+int freeStackPtr = 0;
+
+//DFS search stack
+int* searchStack = NULL;
+int searchStackSize = 0;
+int searchStackPtr = 0;
 
 
 void main(int argc, char *argv[]) {
     
 	//old version:
+	
     // const char* filename = "program.sk";
     // FILE *fptr = fopen(filename, "r");
     // if (!fptr) exit(1); //0 = failure, 1 = success
@@ -39,7 +49,6 @@ void main(int argc, char *argv[]) {
 	runFile(input);
 	
 	//finish
-	//free(input);
     exit(0); 
 }
 
@@ -68,7 +77,7 @@ void runFile(char* input) {
 		//fflush(stdout);
 		
 		//..and build heap from tree
-		initHeap();
+		initStacks();
 		buildHeap(root, 0);
 		
 		//reduce term
@@ -79,7 +88,8 @@ void runFile(char* input) {
 		//de-allocate everything
 		freeCombTree(root);
 		free(heap);
-		free(freeNodes);
+		free(freeStack);
+		free(searchStack);
 		
 		//move on to next line of input
 		line = strchr(line, '\n');
@@ -126,7 +136,7 @@ void strToTree(Comb** left, Comb** right, char** val, char* str) {
 		*val = malloc(splitIndex - str + 1); 
 		memcpy(*val, str, splitIndex - str);
 		*(*val + (splitIndex - str)) = '\0';
-		
+
 		//so we know this node is a leaf
 		*left = NULL; *right = NULL;
 		
@@ -140,7 +150,7 @@ char* splitCombStr(char *str) {
 
 	while (*str) {
 		if (*str == '+') count++;
-		else if (*str == ')' || *str == 'S' || *str == 'K') count--;
+		else if (*str == ')' || *str == 'S' || *str == 'K' || *str == 'I') count--;
 		str++;
 		if (count == 0) break;
 	}
@@ -148,13 +158,14 @@ char* splitCombStr(char *str) {
 	
 }
 
-//input: (var), S, or K. return pointer to char after end of variable
+//input: (var), S, K, or I. return pointer to char after end of variable
 char* getVar(char *str) {
 	if (*str != '(') return str + 1;
 	while (*str && *str != ')') str++;
 	return str + 1;
 }
 
+//print Comb tree
 void printTree(Comb *comb) {
 	if (comb != NULL) {
 		if (comb->val != NULL)  {
@@ -181,17 +192,23 @@ void freeCombTree(Comb* ptr) {
 
 
 
-// *************** heap ***************
+// *************** memory management ***************
 
-//create arrays for the heap and the stack of free heap locations
-void initHeap() {
+//create arrays for the heap, the stack of free heap locations, and the DFS search stack
+void initStacks() {
 	heapSize = 200;
 	heap = (HeapComb*)malloc(heapSize * sizeof(HeapComb));
 	heapLength = 1;
 	
-	stackSize = 10;
-	freeNodes = (int*)malloc(stackSize * sizeof(HeapComb));
-	stackPtr = -1;
+	freeStackSize = 10;
+	freeStack = (int*)malloc(freeStackSize * sizeof(HeapComb));
+	freeStackPtr = -1;
+	
+	searchStackSize = 10;
+	searchStack = (int*)malloc(searchStackSize * sizeof(int));
+	searchStackPtr = 0;
+	*searchStack = 0;
+	
 }
 
 //build heap from Comb tree
@@ -292,35 +309,35 @@ void decrementRefs(int index) {
 void insertFreeNode(int index) {
 	
 	//allocate more memory to stack if necessary
-	if (stackSize - 2 <= stackPtr) {
-		stackSize *= 2;
+	if (freeStackSize - 2 <= freeStackPtr) {
+		freeStackSize *= 2;
 		
-		int* tempPtr = (int*)realloc(freeNodes, stackSize * sizeof(int));
+		int* tempPtr = (int*)realloc(freeStack, freeStackSize * sizeof(int));
 		if (!tempPtr) {
-			reallocFail(freeNodes);
+			reallocFail(freeStack);
 		}
 		
-		freeNodes = tempPtr;
+		freeStack = tempPtr;
 		
 	}
 	
 	//add location to top of stack
-	stackPtr++;
-	*(freeNodes + stackPtr) = index;
+	freeStackPtr++;
+	*(freeStack + freeStackPtr) = index;
 }
 
 //return a free heap address to write data to
 int findMemory() {
 	
 	//if there aren't any reusable locations on the heap, the node will be added to the end of the heap
-	if (stackPtr == -1) {
+	if (freeStackPtr == -1) {
 		checkReallocHeap();
 		heapLength += 1;
 		return heapLength - 1;
 	} else {
 		//overwrite redundant data on the heap
-		stackPtr--;
-		return *(freeNodes + stackPtr + 1);
+		freeStackPtr--;
+		return *(freeStack + freeStackPtr + 1);
 		
 	}
 }
@@ -337,6 +354,16 @@ void printHeapTree(int index) {
 	}
 }
 
+//request twice as much memory for search stack, exit program if unsuccesful
+void checkReallocSearchStack() {
+	if (searchStackSize - 2 <= searchStackPtr) { 
+		searchStackSize *= 2;
+					    
+		int* tempPtr = (int*)realloc(searchStack, searchStackSize * sizeof(int));
+		if (!tempPtr) reallocFail(searchStack);
+		searchStack = tempPtr;
+	} 
+}
 
 
 // *************** reductions ***************
@@ -363,6 +390,10 @@ void runComb() {
 				reductionFound = true;
 				reduceS(*indexPtr);
 				break;
+			case 3:
+				reductionFound = true;
+				reduceI(*indexPtr);
+				break;
 		}
 		
 	}
@@ -371,16 +402,19 @@ void runComb() {
 //check if node is of the form ++Kab
 bool matchK(int index) { 
 	int i = (heap + index)->left;
+	
 	if (i != -1 && (heap + i)->left != -1) {
 		char* str = (heap + (heap + i)->left)->val;
 		return str != NULL && !strcmp(str, "K");
 	}
+	
 	return false;
 }
 
 //check if node is of the form +++Sfgx
 bool matchS(int index) {
 	int i = (heap + index)->left;
+	
 	if (i != -1) {
 		int j = (heap + i)->left;
 		if (j != -1 && (heap + j)->left != -1) {
@@ -388,11 +422,19 @@ bool matchS(int index) {
 			return str != NULL && !strcmp(str, "S");
 		}
 	}
+	
 	return false;
 }
 
-//perform K- and S-reductions
+//check if node is of the form +Ix
+bool matchI(int index) {
+	int i = (heap + index)->left;
+	return i != -1 && (heap + i)->val != NULL && !strcmp((heap + i)->val, "I");
+}
+
+//perform reductions
 void reduceK(int index) {
+	
 	//extract a from ++Kab
 	HeapComb* i = heap + index;
 	HeapComb* a = heap + (heap + i->left)->right;
@@ -424,6 +466,7 @@ void reduceS(int index) {
 	(heap + fIndex)->refs += 1;
 	(heap + gIndex)->refs += 1;
 	(heap + xIndex)->refs += 1;
+	
 	decrementRefs(i->left);
 	
 	//write +fx and +gx to heap
@@ -433,60 +476,74 @@ void reduceS(int index) {
 	editFrame(heap + rightLocation, NULL, gIndex, xIndex, 1);
 	
 	//replace +++Sfgx with ++fx+gx
-	editFrame(heap + index, NULL, leftLocation, rightLocation, i->refs);
+	editFrame(heap + index, NULL, leftLocation, rightLocation, (heap + index)->refs);
+
 
 }
 
-//search for possible reductions starting from the root
+void reduceI(int index) {
+	//extract x from +Ix
+	HeapComb* i = heap + index;
+	HeapComb* x = heap + i->right;
+	
+	//increment the ref counts of x's children, since they'll be referenced by the new copy of x
+	if (x->left != -1) {
+		(heap + x->left)->refs += 1;
+		(heap + x->right)->refs += 1;
+	}
+	
+	//decrement ref counts of I and x
+	decrementRefs(i->left);
+	decrementRefs(i->right);
+	
+	//replace +Ix with x
+	editFrame(i, x->val, x->left, x->right, i->refs);
+	
+}
+
+//search for possible reductions
 int findReductionDFS(int* indexPtr) {
 	
-	//create search depth stack, which stores the ancestors of the node currently being searched
+	//using the global search depth stack, which stores the ancestors of the node currently being searched
 	//(makes it easier to control search depth)
-	int stackSize = 50;
-	int* combStack = (int*)malloc(stackSize * sizeof(int));
-	int ptr = 0;
+
 	int result = 0;
 	int index;
 	int prevIndex;
 	bool backtracking = false;
 	
-	//add root to stack
-	*combStack = 0;
+	//go up 3 nodes in the search tree (the highest possible position of the next reduction?)
+	searchStackPtr -=3;
+	if (searchStackPtr < 0) searchStackPtr = 0;
 	
-	while (ptr != -1) {
-		index = *(combStack + ptr);
+	while (searchStackPtr != -1) {
+		index = *(searchStack + searchStackPtr);
 		
 		if (!backtracking) {
 			
 			//look for reduction at ptr
 			if (matchK(index)) {
 				*indexPtr = index;
-				free(combStack);
 				return 1;
 			} else if (matchS(index)) {
 				*indexPtr = index;
-				free(combStack);
 				return 2;
+			} else if (matchI(index)) {
+				*indexPtr = index;
+				return 3;
 			} else {
 				int left = (heap + index)->left;
 				
 				//if node has left child, realloc if necessary and add left child to stack
-				if (left != -1) {
-					
-					if (stackSize - 1 <= ptr) { 
-						stackSize *= 2;
-					    
-						int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
-						if (!tempPtr) reallocFail(combStack);
-						combStack = tempPtr;
-					} 
-					
-					ptr++;
-					*(combStack + ptr) = left;
+				if (left != -1) {	
+					checkReallocSearchStack();			
+					searchStackPtr++;
+					*(searchStack + searchStackPtr) = left;
 				} else {
+					
 					//start backtracking to find a node in the stack that has a child and continue the search
 					backtracking = true;
-					ptr--;
+					searchStackPtr--;
 					prevIndex = index;
 				}
 			}
@@ -495,40 +552,41 @@ int findReductionDFS(int* indexPtr) {
 			//backtracking - if the prev node we checked is the left child of this one, add its right child to the stack
 			if ((heap + index)->left == prevIndex) {
 				
-				if (stackSize - 1 <= ptr) { 
-					stackSize *= 2;
-					int* tempPtr = (int*)realloc(combStack, stackSize * sizeof(int));
-					if (!tempPtr) reallocFail(combStack);
-					combStack = tempPtr;
-				} 
+				checkReallocSearchStack();
 				
-				ptr++;
-				*(combStack + ptr) = (heap + index)->right;
+				searchStackPtr++;
+				*(searchStack + searchStackPtr) = (heap + index)->right;
 				backtracking = false;
 				
 			} else {
 				//this node has no unsearched children - keep backtracking
-				ptr--;
+				searchStackPtr--;
 				prevIndex = index;
 			}
 		}
 	}
 	
-	free(combStack);
 	return result;
 }
-
-
 
 // *************** debugging ***************
 
 //print stack of free heap locations
-void printFreeNodes() {
+void printFreeStack() {
 	printf("free memory stack:\n");
-	for (int i = 0; i <= stackPtr; i++) {
-		printf("%d: %d\n", i, *(freeNodes + i)); fflush(stdout);
+	for (int i = 0; i <= freeStackPtr; i++) {
+		printf("%d: %d\n", i, *(freeStack + i)); fflush(stdout);
 	}
 	
+}
+
+//print DFS search stack
+void printSearchStack() {
+	printf("searchPtr: %d\n", searchStackPtr);
+	printf("search stack:\n");
+	for (int i = 0; i <= searchStackPtr; i++) {
+		printf("%d: %d\n", i, *(searchStack + i));
+	}
 }
 
 //write most recent heap to file
@@ -555,6 +613,7 @@ void logHeap() {
 	fclose(fptr);
 }
 
+//print everything on the heap
 void printHeap() {
 	HeapComb* h = heap;
 	int i;

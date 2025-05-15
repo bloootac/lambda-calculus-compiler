@@ -11,6 +11,7 @@ import System.Environment
 
 {-
 TODO: 
+
 more optimisations:
  - add S rule
  - add combinators
@@ -62,7 +63,7 @@ num_to_lambda n = Ap (Var "f") (num_to_lambda $ n-1)
 
 -- rules:
 -- \\x.C = KC
--- \\x.x = SKK
+-- \\x.x = I
 -- \\x.AB = S (\\x.A) (\\x.B)
 
 lambda_to_comb :: Lambda -> Comb
@@ -75,7 +76,7 @@ lambda_to_comb l =
 lambda_to_comb' :: String -> Comb -> Comb 
 lambda_to_comb' x y =
   case y of (App a b) -> App (App S (lambda_to_comb' x a)) (lambda_to_comb' x b)
-            otherwise -> if y == (V x) then App (App S K) K else App K y
+            otherwise -> if y == (V x) then I else App K y
 			
 
 -- ******************** run from terminal ********************
@@ -121,6 +122,7 @@ run_f_find_path = run_file (putStrLn . show . run_comb . snd . (\x -> x !! 0) . 
 encode :: Comb -> String
 encode K = "K"
 encode S = "S"
+encode I = "I"
 encode (V s) = "(" ++ s ++ ")"
 encode (App x y) = "+" ++ (encode x) ++ (encode y)
 
@@ -134,5 +136,5 @@ main = do
 	-- args: name of source file and target file
 	-- convert source file to a Comb representation, store at target file
 	args <- getArgs
-	if (length args /= 2) then error "Error: invalid arguments given to conv.exe"
+	if (length args /= 2) then error "Error: invalid arguments given to conv"
 	else write_sk (args !! 0) (args !! 1)

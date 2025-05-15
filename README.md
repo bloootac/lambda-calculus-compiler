@@ -2,7 +2,7 @@
 
 This project contains a compiler and runtime for a programming language heavily based on lambda calculus.
 
-The runtime used here represents the program using SK combinatory logic; there is also [a runtime which uses lambda terms instead](https://github.com/AzureAether/lambda-runtime).
+The runtime used here represents the program using SKI combinatory logic; there is also [a runtime which uses lambda terms instead](https://github.com/AzureAether/lambda-runtime).
 
 Please see [the project webpage](https://www.skyshoesmith.com/projects/lambda-language).
 
@@ -15,16 +15,21 @@ Please see [the project webpage](https://www.skyshoesmith.com/projects/lambda-la
 	(Windows users: this comes with Git Bash, and can also be downloaded [here](https://sourceforge.net/projects/xxd-for-windows/)).
 - [GHC](https://www.haskell.org/ghc), to generate the compiler
 - [GCC](https://gcc.gnu.org/), to compile the runtime
+- Some way to run Bash scripts, if you're not on Linux
+- (Optional) [GDB](https://sourceware.org/gdb/), to use the `debug` command
 
 ### Build commands
 
-In Bash:
-
+On Linux:
 ```
 chmod u+x lambdac
 ./lambdac build
 ```
 
+Otherwise:
+```
+bash ./lambdac build 
+```
 
 ## Language
 
@@ -78,7 +83,7 @@ Format: `run [lambda_term]`
 
 A program can contain multiple run statements. The runtime will reduce each of them in order and output the results. 
 
-The compiler encodes a program into an SK combinator tree before performing reductions. Therefore, if `run` is called on an ungrounded function, the output will contain S and K combinators.
+The compiler encodes a program into an SKI combinator tree before performing reductions. Therefore, if `run` is called on an ungrounded function, the output will contain S, K, and I combinators.
 
 For example, the output of this program
 ```
@@ -88,9 +93,9 @@ run 2
 ```
 will be
 ```
-+K++SKK
-++S++S+KSK+K++SKK
-++S++S+KSK++S++S+KSK+K++SKK
++KI
+++S++S+KSK+KI
+++S++S+KSK++S++S+KSK+KI
 ```
 
 ### Example program
@@ -128,6 +133,7 @@ build                                       generate the lexer, parser, and comp
 interpret [sourceFile] [targetFile]         store the combinatory representation of [sourceFile] at [targetFile]
 compile [sourceFile] [targetFile]           compile [sourceFile] into an executable program stored at [targetFile]
 run [sourceFile]                            compile [sourceFile] and run the program
+debug [sourceFile]                          compile [sourceFile] and run the program with GDB
 quit                                        exit command line tool
 
 >>> run program.txt

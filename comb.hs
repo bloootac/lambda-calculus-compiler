@@ -6,12 +6,12 @@ import Data.Char
 
 -- ******************** datatypes ********************
 
-data Comb = S | K | V String | App Comb Comb deriving Eq
+data Comb = S | K | I | V String | App Comb Comb deriving Eq
 
 instance Show Comb where
-  show (App (App S K) K) = "I"
   show S = "S"
   show K = "K"
+  show I = "I"
   show (V s) = s
   -- show (App x y) = let sx = show x; sy = show y
                        -- wrap s = if (length s == 1) then s else "(" ++ s ++ ")"
@@ -63,7 +63,8 @@ instance Monad Annotated where
 prune_lim = 10
 
 m_run_comb :: Monad m => (Comb -> m Comb) -> Comb -> m Comb
-m_run_comb m (App (App K a) b) = m (App (App K a) b) >> m_run_comb m (k_prune prune_lim a) >>= return 
+m_run_comb m (App (App K a) b) = m (App (App K a) b) >> m_run_comb m (k_prune prune_lim a) >>= return
+m_run_comb m (App I a) = m (App I a) >> m_run_comb m (k_prune prune_lim a) >>= return
 m_run_comb m (App (App (App K a) b) c) = m (App (App (App K a) b) c) >> m_run_comb m (k_prune prune_lim (App a c)) >>= return
 m_run_comb m (App c (App (App K a) b)) = m (App c (App (App K a) b)) >> m_run_comb m (k_prune prune_lim (App c a)) >>= return
 m_run_comb m (App (App (App S f) g) x) = m (App (App (App S f) g) x) >> m_run_comb m (k_prune prune_lim (App (App f x) (App g x))) >>= return 
@@ -79,6 +80,7 @@ m_run_comb m x = return x
 
 m_simplify_one_step :: Monad m => (Comb -> m Comb) -> Comb -> m Comb
 m_simplify_one_step m (App (App K a) b) = m a >>= return 
+m_simplify_one_step m (App I a) = m a >>= return
 m_simplify_one_step m (App (App (App S f) g) x) = m (App (App f x) (App g x)) >>= return 
 m_simplify_one_step m (App x y) = do x' <- m_simplify_one_step m x
                                      if (x == x') then 
@@ -96,6 +98,7 @@ run_comb x = m_run_comb return x
 run_c :: Comb -> Comb
 
 run_c (App (App K a) b) = run_c $ k_prune prune_lim a
+run_c (App I a) = run_c $ k_prune prune_lim a
 run_c (App (App (App K a) b) c) = run_c $ k_prune prune_lim (App a c)
 run_c (App c (App (App K a) b)) = run_c $ k_prune prune_lim(App c a)
 run_c (App (App (App S f) g) x) = run_c $ k_prune prune_lim (App (App f x) (App g x))
@@ -110,6 +113,7 @@ run_c x = x
    
 simplify_one_step :: Comb -> Comb
 simplify_one_step (App (App K a) b) = a
+simplify_one_step (App I a) = a
 simplify_one_step (App (App (App S f) g) x) = (App (App f x) (App g x))
 simplify_one_step (App x y) = let x' = simplify_one_step x
                               in if (x == x') then 
@@ -138,10 +142,11 @@ annotated_run_comb x = m_run_comb (\c -> Log [show c] c) x
 -- i should make the logs better...
 logged_comb :: Comb -> String
 logged_comb c = let space = "            " in
-                  case c of  (App (App (App S f) g) x) -> "complete: S" ++ space ++ show f ++ space ++ show g ++ space ++ show x ++ "\n"
-                             (App (App K a) b)         -> "complete: K" ++space ++ show a ++ space ++ show b ++ "\n"
-                             (App a b)                 -> "partial: " ++ show a ++ space ++ show b ++ "\n"
-                             _                         -> show c
+                  case c of (App (App (App S f) g) x) -> "complete: S" ++ space ++ show f ++ space ++ show g ++ space ++ show x ++ "\n"
+                            (App (App K a) b)         -> "complete: K" ++ space ++ show a ++ space ++ show b ++ "\n"
+                            (App I a)                 -> "complete: I" ++ space ++ show a ++ "\n"
+                            (App a b)                 -> "partial: " ++ show a ++ space ++ show b ++ "\n"
+                            _                        -> show c
 
 write_f_log func log c = do 
                          contents <- readFile log
@@ -186,7 +191,7 @@ char_to_comb :: Char -> Comb
 char_to_comb x 
   | x == 'K' = K
   | x == 'S' = S
-  | x == 'I' = App (App S K) K
+  | x == 'I' = I
   | isDigit x = c_num $ read [x]
   | otherwise = V [x]  			   
 
@@ -195,6 +200,7 @@ char_to_comb x
 c_length :: Comb -> Int
 c_length S = 1
 c_length K = 1
+c_length I = 1
 c_length (V x) = 1
 c_length (App x y) = c_length x + c_length y
 
@@ -202,8 +208,7 @@ c_length (App x y) = c_length x + c_length y
 fx f = (App (App f (V "f")) (V "x"))
 mfx f = fx $ App f (V "m")
 
-c_id = (App (App S K) K)
-c_zero = App K c_id
+c_zero = App K I
 c_plus_one = (App S (App (App S (App K S)) K))
 
 c_num :: Int -> Comb
@@ -221,22 +226,19 @@ match_num x =
   case optimise x of (App (App S (App (App S (App K S)) K)) i) -> fmap (1+) (is_num i)
   
 --                   (S((S(KS))((S(K(S(Ki))))K)))0 = i
-                     (App (App S (App (App S (App K S)) (App (App S (App K (App S (App K i)))) K))) (App K (App (App S K) K))) -> is_num i
+                     (App (App S (App (App S (App K S)) (App (App S (App K (App S (App K i)))) K))) (App K I)) -> is_num i
 
 --                   (S(Ki))j = i * j
                      (App (App S (App K i)) j) -> (is_num i >>= \x -> is_num j >>= \y -> return (x * y)) ;
 
 --                   (S(1(Ki)))I = i
-					 (App (App S (App (App S (App K (App (App S K) K))) (App K i))) (App (App S K) K)) -> is_num i
+					 (App (App S (App (App S (App K I)) (App K i))) I) -> is_num i
 
 --                   KI = 0
-                     (App K (App (App S K) K)) -> Just 0 ;
+                     (App K I) -> Just 0 ;
 
 --                   anything else 
 					 x                         -> Nothing
-
-
--- TODO: getting 1 = I = S (KI) bc of optimisations ... is this okay ? 
 
 is_num_fx :: Comb -> Maybe Int
 is_num_fx n = case n of (App (V "f") c) -> fmap (1+) $ is_num_fx c
@@ -251,15 +253,15 @@ optimise :: Comb -> Comb
 -- S (Ka) (Kb) -> K (ab)
 optimise (App (App S (App K a)) (App K b)) = App K (optimise (App a b))
 -- S (Ka) I -> a
-optimise (App (App S (App K a)) (App (App S K) K)) = optimise a
+optimise (App (App S (App K a)) I) = optimise a
 -- S (KK) a b -> K ab
 optimise (App (App (App S (App K K)) a) b) = App K (optimise (App a b)) 
 
 -- S I (Ka) b -> ba 
-optimise (App (App (App S (App (App S K) K)) (App K a)) b) =  optimise (App b a) 
+optimise (App (App (App S I) (App K a)) b) =  optimise (App b a) 
 
 -- S KI -> I
-optimise (App S (App K (App (App S K) K))) =  c_id
+optimise (App S (App K I)) = I
 
 -- S (K (S KK)) K -> S KK K
 optimise (App (App S (App K (App S (App K K)))) K) = App (App S (App K K)) K
@@ -277,6 +279,7 @@ allSimplifications :: Comb -> [Comb]
 allSimplifications K = []
 allSimplifications S = []
 allSimplifications (App (App K x) y) = x : (map (\x' -> App (App K x') y) $ allSimplifications x) ++ (map (\y' -> App (App K x) y') $ allSimplifications y)
+allSimplifications (App I x) = x : (map (\x' -> App I x') $ allSimplifications x)
 allSimplifications (App (App (App S f) g) x) = (App (App f x) (App g x)) : (map (\f' -> App (App (App S f') g) x) $ allSimplifications f) ++ (map (\g' -> App (App (App S f) g') x) $ allSimplifications g) ++ (map (\x' -> App (App (App S f) g) x') $ allSimplifications x)
 allSimplifications (App x y) = (map (\x' -> App x' y) $ allSimplifications x) ++ (map (\y' -> App x y') $ allSimplifications y)
 
@@ -284,17 +287,19 @@ allSimplifications (App x y) = (map (\x' -> App x' y) $ allSimplifications x) ++
 shortestComputation :: Comb -> Int
 shortestComputation K = 1
 shortestComputation S = 1
+shortestComputation I = 1
 shortestComputation x = let y = (map shortestComputation (allSimplifications x)) in if (y == []) then 0 else minimum y + 1
 
 all_comp_lengths :: Comb -> [Int]
 all_comp_lengths K = [0]
 all_comp_lengths S = [0]
-											 
+all_comp_lengths I = [0]						 
 all_comp_lengths x = case (allSimplifications x) of [] -> [0] ;
                                                     xs -> running_min id (+1) (concat $ map all_comp_lengths (xs))
 
 all_comp_lengths' K = [(0, K)]
 all_comp_lengths' S = [(0, S)]
+all_comp_lengths' I = [(0, I)]
 all_comp_lengths' x = case (allSimplifications x) of [] -> [(0, x)]
                                                      xs -> running_min fst (\(a, b) -> (a + 1, b)) (concat $ map all_comp_lengths' xs)
 
