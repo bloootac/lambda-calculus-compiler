@@ -4,3 +4,6 @@ parser.info
 *.txt
 *.sk
 *.exe
+*.ll
+*.h
+.idea
