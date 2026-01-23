@@ -21,6 +21,13 @@ Start:
   call ptr @puts(ptr @startprompt)
   %dynamicHeap = call ptr @malloc(i64 1)
   store ptr %dynamicHeap, ptr @heap
+  call ptr @parseComb()
+  ret i32 0
+}
+
+; Parse the comb string, creating a node in @heap for each symbol
+define void @parseComb() {
+Start:
   br label %Loop
 
 Loop:
@@ -33,7 +40,7 @@ Loop:
   br i1 %cmp, label %Loop, label %Exit
 
 Exit:
-  ret i32 0
+  ret void
 }
 
 declare i32 @puts();
