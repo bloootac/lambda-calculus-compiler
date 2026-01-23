@@ -2,7 +2,7 @@
 
 This project contains a compiler and runtime for a programming language heavily based on lambda calculus.
 
-The runtime used here represents the program using SK combinatory logic; there is also [a runtime which uses lambda terms instead](https://github.com/AzureAether/lambda-runtime).
+The runtime used here represents the program using SKI combinatory logic; there is also [a runtime which uses lambda terms instead](https://github.com/AzureAether/lambda-runtime).
 
 Please see [the project webpage](https://www.skyshoesmith.com/projects/lambda-language).
 
@@ -15,16 +15,21 @@ Please see [the project webpage](https://www.skyshoesmith.com/projects/lambda-la
 	(Windows users: this comes with Git Bash, and can also be downloaded [here](https://sourceforge.net/projects/xxd-for-windows/)).
 - [GHC](https://www.haskell.org/ghc), to generate the compiler
 - [GCC](https://gcc.gnu.org/), to compile the runtime
+- Some way to run Bash scripts, if you're not on Linux
+- (Optional) [GDB](https://sourceware.org/gdb/), to use the `debug` command
 
 ### Build commands
 
-In Bash:
-
+On Linux:
 ```
 chmod u+x lambdac
 ./lambdac build
 ```
 
+Otherwise:
+```
+bash ./lambdac build 
+```
 
 ## Language
 
@@ -78,7 +83,7 @@ Format: `run [lambda_term]`
 
 A program can contain multiple run statements. The runtime will reduce each of them in order and output the results. 
 
-The compiler encodes a program into an SK combinator tree before performing reductions. Therefore, if `run` is called on an ungrounded function, the output will contain S and K combinators.
+The compiler encodes a program into an SKI combinator tree before performing reductions. Therefore, if `run` is called on an ungrounded function, the output will contain S, K, and I combinators.
 
 For example, the output of this program
 ```
@@ -88,27 +93,39 @@ run 2
 ```
 will be
 ```
-+K++SKK
-++S++S+KSK+K++SKK
-++S++S+KSK++S++S+KSK+K++SKK
++KI
+++S++S+KSK+KI
+++S++S+KSK++S++S+KSK+KI
 ```
 
 ### Example program
 This program outputs the first five Fibonacci numbers.
 ```
--- Fibonacci program
+tru = \a b.a
+fal = \a b.b
+isZero = \m. m (tru fal) tru
 
-isZero = \m. m (true false) true
+-- tuple stuff
+tup = \a b f.f a b
+fst = \t.t (\x y.x)
+snd = \t.t (\x y.y)
 
-tup = \a x b. b a x 
+-- subOne is unused in this program
+subOne = \n f x. (n (\t. tup 1 ((\x. (isZero (t tru)) x (f x)) (t fal))) (tup 0 x)) fal
 
-subOne = \n f x. (n (\t. tup 1 ((\x. (isZero (t true)) x (f x)) (t false))) (tup 0 x)) false
-
+-- arithmetic
 addOne = \m f x.f (m f x)
 add = \m n. m addOne n
 
+-- fixed point combinators
 Y = \f. (\x. f(x x))(\x. f(x x))
-fib = Y(\f i. isZero i 1 ((isZero (subOne i)) 1 (add (f (subOne i)) (f (2 subOne i)))))
+Z = \f. (\x. f(\v.x x v))(\x. f(\v.x x v))
+
+---- fibonacci function
+-- (fib k, fib k+1) -> (fib k+1, fib k+2)
+increment = \t.tup (snd t) (add (fst t) (snd t))
+-- i -> (fib i, fib i+1)
+fib = \i.fst(i increment (tup 1 1))
 
 run fib 0 f x
 run fib 1 f x
@@ -128,6 +145,7 @@ build                                       generate the lexer, parser, and comp
 interpret [sourceFile] [targetFile]         store the combinatory representation of [sourceFile] at [targetFile]
 compile [sourceFile] [targetFile]           compile [sourceFile] into an executable program stored at [targetFile]
 run [sourceFile]                            compile [sourceFile] and run the program
+debug [sourceFile]                          compile [sourceFile] and run the program with GDB
 quit                                        exit command line tool
 
 >>> run program.txt

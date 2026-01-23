@@ -12,8 +12,6 @@ import System.Environment
 {-
 TODO: 
 
-add I combinator, update translations and optimisations to use it [done?]	
-
 more optimisations:
  - add S rule
  - add combinators

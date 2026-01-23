@@ -28,7 +28,7 @@ void editFrame(HeapComb* i, char* val, int left, int right, int refs);
 void decrementRefs(int index);
 void insertFreeNode(int index);
 int findMemory();
-
+void printHeapTree(int index);
 void checkReallocSearchStack();
 
 void runComb();
@@ -39,7 +39,6 @@ void reduceK(int index);
 void reduceS(int index);
 void reduceI(int index);
 int findReductionDFS(int* indexPtr);
-void printHeapTree(int index);
 
 void reallocFail(void* ptr);
 void printFreeStack();
