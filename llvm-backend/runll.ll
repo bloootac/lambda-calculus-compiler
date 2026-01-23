@@ -23,15 +23,18 @@ define i32 @main() {
   br label %5
 
 5:
-  %6 = phi i64 [ 0, %0 ], [ %8, %5 ]
-  call ptr @puts(ptr @looping)
-  %8 = add i64 %6, 1
-  %9 = icmp ult i64 %8, 7               ; second arg here is size of @comb
-  br i1 %9, label %5, label %11
+  %6 = phi i64 [ 0, %0 ], [ %9, %5 ]
+  %7 = getelementptr [7 x i8], ptr @comb, i64 0, i64 %6
+  %deref = load i8, ptr %7
+  call ptr @putchar(i8 %deref)
+  %9 = add i64 %6, 1
+  %10 = icmp ult i64 %9, 7               ; second arg here is size of @comb
+  br i1 %10, label %5, label %11
 
 11:
   ret i32 0
 }
 
 declare i32 @puts();
+declare i32 @putchar();
 declare ptr @malloc();
