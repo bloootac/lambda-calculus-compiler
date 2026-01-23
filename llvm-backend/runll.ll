@@ -17,21 +17,22 @@ target triple = "x86_64-w64-windows-gnu"
 @heapSize   = global i64 0
 
 define i32 @main() {
+Start:
   call ptr @puts(ptr @startprompt)
-  %2 = call ptr @malloc(i64 1)
-  store ptr %2, ptr @heap
-  br label %5
+  %dynamicHeap = call ptr @malloc(i64 1)
+  store ptr %dynamicHeap, ptr @heap
+  br label %Loop
 
-5:
-  %6 = phi i64 [ 0, %0 ], [ %9, %5 ]
-  %7 = getelementptr [7 x i8], ptr @comb, i64 0, i64 %6
-  %deref = load i8, ptr %7
-  call ptr @putchar(i8 %deref)
-  %9 = add i64 %6, 1
-  %10 = icmp ult i64 %9, 7               ; second arg here is size of @comb
-  br i1 %10, label %5, label %11
+Loop:
+  %i = phi i64 [ 0, %Start ], [ %newi, %Loop ]
+  %symbol = getelementptr [7 x i8], ptr @comb, i64 0, i64 %i
+  %symbolVal = load i8, ptr %symbol
+  call ptr @putchar(i8 %symbolVal)
+  %newi = add i64 %i, 1
+  %cmp = icmp ult i64 %newi, 7               ; second arg here is size of @comb
+  br i1 %cmp, label %Loop, label %Exit
 
-11:
+Exit:
   ret i32 0
 }
 
