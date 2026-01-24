@@ -1,11 +1,11 @@
 target datalayout = "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-w64-windows-gnu"
 
-; 2-bit character {00 = +, 01 = S, 10 = K, 11 = I}
+; value, a string (ptr) containing S, K, I, or a variable name
 ; left,  a "pointer" (i64 offset from @heap ptr)
 ; right, a "pointer" (i64 offset from @heap ptr)
 ; references, an i32 count of references pointing to this node
-%struct.HeapComb = type { i2, i64, i64, i32 }
+%HeapComb = type { ptr, i32, i32, i32 }
 
 @startprompt = constant [26 x i8] c"Interpreting comb term...\00"
 @looping     = constant [11 x i8]  c"Looping...\00"
@@ -19,7 +19,7 @@ target triple = "x86_64-w64-windows-gnu"
 define i32 @main() {
 Start:
   call ptr @puts(ptr @startprompt)
-  %dynamicHeap = call ptr @malloc(i64 1)
+  %dynamicHeap = call ptr @malloc(i64 162)
   store ptr %dynamicHeap, ptr @heap
   call ptr @parseComb()
   ret i32 0
@@ -28,6 +28,11 @@ Start:
 ; Parse the comb string, creating a node in @heap for each symbol
 define void @parseComb() {
 Start:
+  %parseStack = call ptr @malloc(i64 64)
+  %parseStackSize = alloca i64
+  store i64 1, ptr %parseStackSize
+  %parseStackPtr  = alloca i64
+  store i64 0, ptr %parseStackPtr
   br label %Loop
 
 Loop:
@@ -46,3 +51,4 @@ Exit:
 declare i32 @puts();
 declare i32 @putchar();
 declare ptr @malloc();
+declare ptr @realloc();
