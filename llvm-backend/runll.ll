@@ -36,12 +36,12 @@ Start:
   br label %Loop
 
 Loop:
-  %i = phi i64 [ 0, %Start ], [ %newi, %Loop ]
+  %i = phi i64 [ 6, %Start ], [ %newi, %Loop ] ; i starts at sizeof(@comb)-1
   %symbol = getelementptr [7 x i8], ptr @comb, i64 0, i64 %i
   %symbolVal = load i8, ptr %symbol
   call ptr @putchar(i8 %symbolVal)
-  %newi = add i64 %i, 1
-  %cmp = icmp ult i64 %newi, 7               ; second arg here is size of @comb
+  %newi = sub i64 %i, 1
+  %cmp = icmp uge i64 %i, 1               ; second arg is sizeof(@comb)
   br i1 %cmp, label %Loop, label %Exit
 
 Exit:
