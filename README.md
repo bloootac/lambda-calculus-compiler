@@ -6,6 +6,11 @@ The runtime used here represents the program using SKI combinatory logic; there 
 
 Please see [the project webpage](https://www.skyshoesmith.com/projects/lambda-language).
 
+## expanded-semantics: TODO
+- fix lambdac script file to search files in the current path \[DONE]
+- memory limit for heap once it reaches an unreasonable amount?
+- work on recognising H\* normal form 
+
 ## Getting set up
 
 ### Stuff you'll need 
